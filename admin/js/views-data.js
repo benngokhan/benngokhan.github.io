@@ -337,7 +337,7 @@
           <div class="alert-strip" :class="wb.dirty ? 'warn' : 'info'">
             <el-icon><component :is="wb.dirty ? 'WarningFilled' : 'InfoFilled'" /></el-icon>
             <span v-if="wb.dirty">Kaydedilmemiş değişiklikler var. "Kaydet + Drive'a yaz" GitHub'a commit atar ve Google Drive <b>YOUTUBE_OTOMASYON / CEO</b> klasöründeki ana tabloyu günceller. Not: ilk kayıtta orijinal dosya <b>admin_backups/</b> altına yedeklenir; tarayıcı tabanlı yazma hücre stillerini sadeleştirebilir.</span>
-            <span v-else>Tablo canlı depodan yüklendi ({{ (wb.meta.size/1024).toFixed(0) }} KB). Düzenleme modunu açarak hücreleri değiştirebilirsin.</span>
+            <span v-else>Tablo canlı depodan yüklendi ({{ (wb.meta.size/1024).toFixed(0) }} KB). Düzenleme modunu açarak hücreleri değiştirebilirsin. <b>Not:</b> 30 dakikalık senkron tabloyu Drive'daki ana kopyadan yeniler; kalıcı düzenleme için <b>Kaydet + Drive'a yaz</b> kullan.</span>
           </div>
 
           <div class="card">

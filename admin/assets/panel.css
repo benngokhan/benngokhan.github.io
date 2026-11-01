@@ -200,3 +200,18 @@ code, pre, .mono { font-family: "SFMono-Regular", Consolas, "Liberation Mono", M
 .link-btn { color: var(--bd-blue); cursor: pointer; font-size: 12.5px; }
 .link-btn:hover { text-decoration: underline; }
 .small-num { font-variant-numeric: tabular-nums; }
+
+/* ---------- Responsive ---------- */
+@media (max-width: 1024px) {
+  .sidebar { width: 62px; flex-basis: 62px; }
+  .sidebar .name, .sidebar .sidebar-foot { display: none; }
+  .content { padding: 12px; }
+  .page-head h2 { font-size: 17px; }
+  .crumbs span:first-child { display: none; }
+}
+@media (max-width: 760px) {
+  .topbar-right .muted, .topbar-right .el-tag { display: none; }
+  .stat .v { font-size: 22px; }
+  .slot-grid { grid-template-columns: repeat(2, minmax(0,1fr)); }
+  .el-drawer { width: 100% !important; }
+}

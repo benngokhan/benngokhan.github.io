@@ -756,7 +756,7 @@
         }
         const book = XLSX.utils.book_new();
         this.wb.names.forEach((name) => {
-          const rows = this.wb.sheets[name] || [];
+          const rows = trimSheet(this.wb.sheets[name] || []);
           const ws = XLSX.utils.aoa_to_sheet(rows);
           XLSX.utils.book_append_sheet(book, ws, name);
         });
@@ -830,6 +830,24 @@
       } catch (e) { /* sessiz */ }
     }
   });
+
+  /* Boş satır/kolonları kırp (dosya şişmesini önler) */
+  function trimSheet(rows) {
+    const isBlank = (v) => v === '' || v === null || v === undefined;
+    let lastRow = rows.length - 1;
+    while (lastRow >= 0 && (rows[lastRow] || []).every(isBlank)) lastRow--;
+    if (lastRow < 0) return [];
+    let lastCol = 0;
+    for (let r = 0; r <= lastRow; r++) {
+      const row = rows[r] || [];
+      for (let c = row.length - 1; c >= 0; c--) {
+        if (!isBlank(row[c])) { if (c > lastCol) lastCol = c; break; }
+      }
+    }
+    const out = [];
+    for (let r = 0; r <= lastRow; r++) out.push((rows[r] || []).slice(0, lastCol + 1));
+    return out;
+  }
 
   function parseDispatchInputs(raw) {
     const inputs = [];

@@ -457,7 +457,7 @@
           isFriday: d === 'Cuma',
           slots: [
             { time: '12:12', type: 'cold', label: 'Isınma (kuyruk gecikmesi önleyici)' },
-            { time: '12:30', type: 'long', label: d === 'Cuma' ? 'Uzun video yayını' : 'Shorts yayını' },
+            { time: '12:30', type: d === 'Cuma' ? 'long' : 'short', label: d === 'Cuma' ? 'Uzun video yayını' : 'Shorts yayını' },
             { time: '12:50', type: 'watch', label: 'Bekçi erken uyarı' },
             { time: '13:00', type: 'watch', label: 'Bekçi tescil / kurtarma' },
             { time: '19:12', type: 'cold', label: 'Isınma' },

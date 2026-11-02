@@ -52,6 +52,10 @@
         if (s.kalan === null || s.kalan === undefined || !s.limit) return null;
         return Math.max(0, Math.min(100, (s.kalan / s.limit) * 100));
       },
+      kirilimYuzde(s, k) {
+        const toplam = (s.kirilim || []).reduce((a, x) => a + (x.boyut || 0), 0) || 1;
+        return Math.max(0.5, (k.boyut || 0) / toplam * 100);
+      },
       barRenk(p) {
         if (p === null) return '#909399';
         if (p <= 10) return '#f56c6c';
@@ -173,12 +177,29 @@
               </span>
             </div>
             <div style="font-size:18px;font-weight:700;margin-bottom:6px">{{ deger(s) }}</div>
+            <div v-if="s.yenilenme"
+                 style="font-size:11.5px;color:#2f6fbf;background:#eef5ff;display:inline-block;
+                        padding:2px 8px;border-radius:10px;margin-bottom:8px">
+              ⟳ {{ s.yenilenme }}
+            </div>
             <div v-if="yuzde(s) !== null" style="height:7px;background:#eef1f5;border-radius:4px;overflow:hidden;margin-bottom:8px">
               <div :style="{ width: yuzde(s) + '%', height:'100%', background: barRenk(yuzde(s)), transition:'width .4s' }"></div>
             </div>
             <div v-if="s.mesaj" style="font-size:12px;color:#f56c6c;margin-bottom:6px">{{ s.mesaj }}</div>
             <div style="font-size:12px;color:#8a8a8a;line-height:1.6">
               <span v-for="(e, i) in ekstra(s)" :key="i" style="margin-right:10px">{{ e }}</span>
+            </div>
+            <div v-if="s.kirilim && s.kirilim.length" style="margin-top:10px;border-top:1px dashed #eef1f5;padding-top:8px">
+              <div style="font-size:11.5px;color:#8a8a8a;margin-bottom:6px">Neyi tutuyor:</div>
+              <div v-for="k in s.kirilim" :key="k.ad" style="margin-bottom:5px">
+                <div style="display:flex;justify-content:space-between;font-size:11.5px">
+                  <span>{{ k.ad }}</span>
+                  <span style="color:#8a8a8a">{{ boyut(k.boyut) }} · {{ k.dosya }} dosya</span>
+                </div>
+                <div style="height:5px;background:#f2f5f8;border-radius:3px;overflow:hidden">
+                  <div :style="{ width: kirilimYuzde(s, k) + '%', height:'100%', background:'#7aa7e0' }"></div>
+                </div>
+              </div>
             </div>
             <div v-if="s.not_" style="font-size:11.5px;color:#a8a8a8;margin-top:6px">{{ s.not_ }}</div>
           </div>

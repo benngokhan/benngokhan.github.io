@@ -612,6 +612,39 @@ dialog::backdrop{background:rgba(0,8,12,.83);backdrop-filter:blur(10px)}
 })();
   </script>
   <script>
+    // ── Adres çubuğunda #hash gösterme ────────────────────────────────────────
+    // Site içi menü/CTA tıklamaları kaydırır ama adrese "#videolar" gibi ek yazmaz.
+    // Dışarıdan hash ile gelinirse (PWA kısayolu, paylaşılan link) önce o bölüme
+    // kaydırır, sonra adresi temizler. Böylece link paylaşımı ve kısayollar bozulmaz.
+    (function () {
+      const cleanUrl = () => {
+        try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {}
+      };
+      const smooth = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth';
+      const goTo = (id, focus) => {
+        const el = id ? document.getElementById(id) : null;
+        if (!id || !el) { window.scrollTo({ top: 0, behavior: smooth() }); return; }
+        el.scrollIntoView({ behavior: smooth(), block: 'start' });
+        if (focus) { el.setAttribute('tabindex', '-1'); try { el.focus({ preventScroll: true }); } catch (e) {} }
+      };
+      // 1) Dışarıdan gelen hash
+      if (location.hash.length > 1) {
+        const target = location.hash.slice(1);
+        requestAnimationFrame(() => { goTo(target, false); cleanUrl(); });
+      }
+      // 2) Sayfa içi bağlantılar
+      document.addEventListener('click', (event) => {
+        const link = event.target.closest('a[href^="#"]');
+        if (!link || event.defaultPrevented || event.button !== 0) return;
+        if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+        const id = link.getAttribute('href').slice(1);
+        event.preventDefault();
+        goTo(id, true);
+        cleanUrl();
+      });
+    })();
+  </script>
+  <script>
     // PWA: "Ana ekrana ekle" ile gerçek uygulama olarak yüklenebilmesi için
     if ('serviceWorker' in navigator && (location.protocol === 'https:' || /^(localhost|127\.0\.0\.1)$/.test(location.hostname))) {
       window.addEventListener('load', function () {

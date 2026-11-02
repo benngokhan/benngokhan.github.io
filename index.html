@@ -147,6 +147,13 @@ h2 .soft{color:#95b7b6}
 .video-card.land .card-watch{margin-top:auto}
 .video-card.land .card-bottom h3{font-size:15px;line-height:1.3;margin:8px 0 13px;-webkit-line-clamp:2}
 .video-card.land .card-footer-line{margin-bottom:11px}
+.statbar{position:relative;background:#071219}
+.statbar-inner{display:flex;align-items:center;justify-content:space-between;gap:clamp(18px,4vw,54px);padding-block:26px;border-top:1px solid rgba(215,238,231,.1);border-bottom:1px solid rgba(215,238,231,.1)}
+.stat{display:flex;flex-direction:column;gap:7px;min-width:0}
+.stat .k{font-size:9px;letter-spacing:.18em;font-weight:700;color:var(--gold)}
+.stat .v{font-family:var(--display);font-size:clamp(21px,2.3vw,30px);line-height:1;letter-spacing:-.03em;color:#eaf7f5}
+.stat .v.small{font-family:inherit;font-size:13px;letter-spacing:0;color:#a9c4c2}
+.long-section{padding-top:clamp(48px,4.6vw,68px)}
 .card-index{color:var(--gold);font-size:9px;font-weight:700;letter-spacing:.15em;text-transform:uppercase}
 .card-bottom h3{font-family:var(--display);font-size:clamp(16px,1.5vw,20px);line-height:1.22;letter-spacing:-.03em;font-weight:600;margin:9px 0 16px;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
 .card-watch{display:flex;align-items:center;justify-content:space-between;color:#d4e6e3;font-size:11px;font-weight:700}
@@ -199,7 +206,7 @@ dialog::backdrop{background:rgba(0,8,12,.83);backdrop-filter:blur(10px)}
 .dialog-foot{padding:14px 20px 18px;display:flex;align-items:center;justify-content:space-between;gap:14px;color:#a7bec0;font-size:11px}
 .dialog-foot a{color:var(--aqua);font-weight:700;text-decoration:underline;text-underline-offset:3px}
 @media(max-width:900px){.hero{min-height:790px}.hero-wrap{padding-left:clamp(25px,5vw,55px)}.hero-bottom{left:clamp(25px,5vw,55px);right:clamp(25px,5vw,55px)}.hero h1{font-size:clamp(70px,10vw,105px)}.hero-shade{background:linear-gradient(90deg,rgba(4,13,19,.95) 0%,rgba(4,14,20,.84) 33%,rgba(4,13,20,.35) 80%),linear-gradient(0deg,#071219 0%,transparent 20%)}.nav-links{gap:17px}.about-grid{gap:40px}.about-art{min-height:410px}}
-@media(max-width:680px){.site-header{padding:13px 14px}.nav{min-height:62px;padding:9px 10px 9px 13px;border-radius:15px}.brand-mark{width:38px;height:38px}.brand-title{font-size:13px}.brand-subtitle{font-size:7px}.nav-links{display:none}.nav-cta{padding:11px 12px;font-size:11px;gap:7px}.hero{min-height:710px;min-height:max(690px,100svh);align-items:flex-end}.hero-art{background-position:65% 26%;background-size:auto 100%}.hero-shade{background:linear-gradient(0deg,#061219 0%,rgba(4,14,20,.94) 25%,rgba(4,14,20,.55) 60%,rgba(4,14,20,.21) 100%),linear-gradient(90deg,rgba(4,14,20,.65),transparent)}.hero-wrap{padding:180px 22px 125px}.hero h1{font-size:clamp(65px,15vw,98px);margin:21px 0 20px}.hero-copy{font-size:14px;max-width:380px;line-height:1.65}.hero-actions{margin-top:25px;gap:9px}.button{min-height:50px;font-size:12px;padding-inline:15px;gap:10px}.hero-bottom{bottom:27px;left:22px;right:22px}.hero-side-note{font-size:8px}.hero-side-note strong{font-size:10px}.ticker-track{min-height:60px;gap:33px}.ticker-track span{font-size:10px}.section{padding-top:82px;padding-bottom:85px}.section-top{display:block;margin-bottom:35px}.section-description{margin-top:20px;max-width:400px}.video-card{flex-basis:63vw;max-width:236px}.video-card[data-kind="long"]{flex-basis:75vw;max-width:280px}.video-card.land{flex-basis:80vw;max-width:340px}.row-controls{gap:5px}.arrow{width:39px;height:39px}.about-grid{grid-template-columns:1fr}.about-art{min-height:360px}.about-copy p{font-size:15px}.long-card{grid-template-columns:1fr}.long-copy{order:2}.long-image{order:1;min-height:250px}.long-image::after{background:linear-gradient(0deg,#102127,transparent 55%)}.join{padding:80px 23px}.footer-inner{align-items:flex-start;flex-direction:column}.footer-links{gap:18px}.dialog-head{padding:14px 14px 12px 17px}.dialog-foot{align-items:flex-start;flex-direction:column}.player-screen.is-short{width:min(100%,350px,calc((100svh - 175px)*.5625));max-height:none}}
+@media(max-width:680px){.site-header{padding:13px 14px}.nav{min-height:62px;padding:9px 10px 9px 13px;border-radius:15px}.brand-mark{width:38px;height:38px}.brand-title{font-size:13px}.brand-subtitle{font-size:7px}.nav-links{display:none}.nav-cta{padding:11px 12px;font-size:11px;gap:7px}.hero{min-height:710px;min-height:max(690px,100svh);align-items:flex-end}.hero-art{background-position:65% 26%;background-size:auto 100%}.hero-shade{background:linear-gradient(0deg,#061219 0%,rgba(4,14,20,.94) 25%,rgba(4,14,20,.55) 60%,rgba(4,14,20,.21) 100%),linear-gradient(90deg,rgba(4,14,20,.65),transparent)}.hero-wrap{padding:180px 22px 125px}.hero h1{font-size:clamp(65px,15vw,98px);margin:21px 0 20px}.hero-copy{font-size:14px;max-width:380px;line-height:1.65}.hero-actions{margin-top:25px;gap:9px}.button{min-height:50px;font-size:12px;padding-inline:15px;gap:10px}.hero-bottom{bottom:27px;left:22px;right:22px}.hero-side-note{font-size:8px}.hero-side-note strong{font-size:10px}.ticker-track{min-height:60px;gap:33px}.ticker-track span{font-size:10px}.section{padding-top:82px;padding-bottom:85px}.section-top{display:block;margin-bottom:35px}.section-description{margin-top:20px;max-width:400px}.video-card{flex-basis:63vw;max-width:236px}.video-card[data-kind="long"]{flex-basis:75vw;max-width:280px}.video-card.land{flex-basis:80vw;max-width:340px}.statbar-inner{display:grid;grid-template-columns:1fr 1fr;gap:18px 20px;padding-block:22px}.stat .v{font-size:19px}.row-controls{gap:5px}.arrow{width:39px;height:39px}.about-grid{grid-template-columns:1fr}.about-art{min-height:360px}.about-copy p{font-size:15px}.long-card{grid-template-columns:1fr}.long-copy{order:2}.long-image{order:1;min-height:250px}.long-image::after{background:linear-gradient(0deg,#102127,transparent 55%)}.join{padding:80px 23px}.footer-inner{align-items:flex-start;flex-direction:column}.footer-links{gap:18px}.dialog-head{padding:14px 14px 12px 17px}.dialog-foot{align-items:flex-start;flex-direction:column}.player-screen.is-short{width:min(100%,350px,calc((100svh - 175px)*.5625));max-height:none}}
 @media(max-width:380px){.nav-cta{font-size:0;gap:0}.nav-cta svg{width:17px;height:17px}.hero h1{font-size:61px}.scroll-cue>span:last-child{display:none}.hero-copy{max-width:320px}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
   </style>
@@ -315,6 +322,15 @@ dialog::backdrop{background:rgba(0,8,12,.83);backdrop-filter:blur(10px)}
 
     <section class="section about" id="hikaye" aria-labelledby="about-title">
       <div class="container about-grid"><div class="about-copy"><div class="kicker">BİR DOZ MERAK</div><h2 id="about-title">Gördüğünden<br><span class="soft">biraz fazlası.</span></h2><p>Bazen en ilginç hikâye, her gün fark etmeden yanından geçtiğimiz bir şeyin içinde saklıdır. Bilgi Dozu’nda o küçük soruların peşine düşüyor, dünyaya yeni bir gözle bakıyoruz.</p><a class="button button-ghost" href="#videolar">Keşfetmeye başla <svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></a></div><div class="about-art" aria-label="Işıklı sinir ağlarından oluşan bilimsel illüstrasyon" role="img"><div class="about-card"><div><small>HER ŞEY BİR SORUYLA BAŞLAR</small><p>Merak, iyi gelir.</p></div><svg width="33" height="33" viewBox="0 0 32 32" fill="none" aria-hidden="true"><path d="M16 3l3.4 9.6L29 16l-9.6 3.4L16 29l-3.4-9.6L3 16l9.6-3.4L16 3Z" stroke="currentColor" stroke-width="1.2"/><circle cx="16" cy="16" r="3" fill="currentColor"/></svg></div></div></div>
+    </section>
+
+    <section class="statbar" id="statbar" aria-label="Kanal sayıları" hidden>
+      <div class="container statbar-inner">
+        <div class="stat"><span class="k">YAYIN</span><span class="v" id="stat-videos">—</span></div>
+        <div class="stat"><span class="k">İZLENME</span><span class="v" id="stat-views">—</span></div>
+        <div class="stat"><span class="k">BEĞENİ</span><span class="v" id="stat-likes">—</span></div>
+        <div class="stat stat-handle"><span class="k">KANAL</span><span class="v small">@bilgidozuofficial</span></div>
+      </div>
     </section>
 
     <section class="section long-section" id="derinlemesine" aria-labelledby="long-title">
@@ -538,6 +554,16 @@ dialog::backdrop{background:rgba(0,8,12,.83);backdrop-filter:blur(10px)}
         const shorts=clean(data&&data.top_shorts);
         const longs=clean(data&&data.top_longs);
         if(!shorts.length&&!longs.length)throw Error('empty');
+        // Canlı sayaç şeridi: aynı JSON'daki toplamlar
+        const totals=(data&&data.totals)||{};
+        const fmtNum=(v)=>{const n=Number(v)||0;return n>0?n.toLocaleString('tr-TR'):''};
+        const fill=(id,val)=>{const el=document.getElementById(id);if(el&&val)el.textContent=val;};
+        fill('stat-videos',fmtNum(totals.videos)?fmtNum(totals.videos)+' video':'');
+        fill('stat-views',fmtNum(totals.views)?fmtNum(totals.views)+' izlenme':'');
+        fill('stat-likes',fmtNum(totals.likes)?fmtNum(totals.likes)+' beğeni':'');
+        document.querySelectorAll('#statbar .v').forEach((el)=>{if(el.textContent==='—')el.parentElement.style.display='none';});
+        const barEl=document.getElementById('statbar');
+        if(barEl&&document.querySelectorAll('#statbar .stat:not([style])').length)barEl.hidden=false;
         fillRail('top-shorts-rail','top-shorts-note',shorts,'Beğeni + izlenmeye göre ilk 10 Shorts','Sıralama verisi henüz yok',"YouTube'da tüm Shorts",'short');
         fillRail('long-rail','long-note',longs,'Daha derin anlatımlar · uzun videolar','Uzun videolar yakında',"YouTube'da tüm videolar",'long');
       })

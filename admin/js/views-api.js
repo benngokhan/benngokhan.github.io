@@ -62,6 +62,9 @@
         const k = s.kalan;
         const l = s.limit;
         if (s.ad === 'Google Drive') return (this.boyut(k) + ' / ' + this.boyut(l));
+        if (s.ad === 'GitHub' && s.actions_dakika !== undefined) {
+          return this.sayi(s.actions_kalan) + ' / ' + s.actions_limit + ' dk · Actions';
+        }
         if (k === null || k === undefined) return '—';
         return this.sayi(k) + (l ? ' / ' + this.sayi(l) : '') + (s.birim ? ' · ' + s.birim : '');
       },
@@ -72,7 +75,8 @@
       },
       ekstra(s) {
         const out = [];
-        if (s.actions_dakika !== undefined) out.push(`Actions: ${this.sayi(s.actions_dakika)} / ${s.actions_limit} dk (${s.actions_kosu} koşu)`);
+        if (s.actions_dakika !== undefined) out.push(`Actions: ${this.sayi(s.actions_dakika)} dk kullanıldı (${s.actions_kosu} koşu)`);
+        if (s.ad === 'GitHub' && s.limit) out.push(`panel API: ${this.sayi(s.kalan)} / ${this.sayi(s.limit)} istek/saat`);
         if (s.bugun_yukleme !== undefined) out.push(`bugün ${s.bugun_yukleme} yükleme`);
         if (s.reset_iso) out.push('yenilenme: ' + s.reset_iso.slice(0, 10));
         if (s.tier) out.push('plan: ' + s.tier);

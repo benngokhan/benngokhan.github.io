@@ -119,6 +119,9 @@ h2 .soft{color:#95b7b6}
 .row-controls{display:flex;gap:7px}
 .arrow{width:43px;height:43px;display:grid;place-items:center;color:#d6edeb;border:1px solid rgba(193,229,223,.22);border-radius:50%;background:transparent;cursor:pointer;transition:background .2s,border .2s}
 .arrow:hover{background:rgba(157,235,231,.1);border-color:var(--aqua)}
+.video-card.has-thumb .card-art{filter:saturate(1.05)}
+.video-card.has-thumb .card-bottom h3{font-size:14.5px;line-height:1.33;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.video-card.has-thumb::after{background:linear-gradient(180deg,rgba(3,14,19,0) 35%,rgba(4,14,19,.55) 62%,rgba(3,12,17,.97) 100%)}
 .rail{display:flex;gap:16px;overflow-x:auto;overflow-y:hidden;padding:2px 0 17px;scroll-snap-type:x mandatory;scrollbar-width:thin;scrollbar-color:#2a5557 #0d1a20;overscroll-behavior-x:contain}
 .rail::-webkit-scrollbar{height:4px}.rail::-webkit-scrollbar-track{background:#0d1a20}.rail::-webkit-scrollbar-thumb{background:#2a5557;border-radius:4px}
 .video-card{position:relative;display:block;flex:0 0 clamp(218px,21.8vw,286px);aspect-ratio:4/5.25;overflow:hidden;border-radius:16px;background:#10242b;scroll-snap-align:start;border:1px solid rgba(194,233,230,.11);isolation:isolate}
@@ -345,6 +348,47 @@ dialog::backdrop{background:rgba(0,8,12,.83);backdrop-filter:blur(10px)}
   document.querySelectorAll('[data-rail][data-direction]').forEach((button)=>{
     button.addEventListener('click',()=>{const rail=document.getElementById(button.dataset.rail);if(rail)rail.scrollBy({left:Number(button.dataset.direction)*Math.max(250,rail.clientWidth*.72),behavior:window.matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'});});
   });
+
+  // ── Gerçek YouTube kapakları: kart görselini videonun kapağıyla değiştir ──
+  // (i.ytimg.com CSP'de zaten izinli; kapak yüklenemezse mevcut sanat görseli kalır)
+  const thumbSources=(id)=>[
+    'https://i.ytimg.com/vi/'+encodeURIComponent(id)+'/maxresdefault.jpg',
+    'https://i.ytimg.com/vi/'+encodeURIComponent(id)+'/hqdefault.jpg'
+  ];
+  const hydrateThumb=(card)=>{
+    if(!card||card.dataset.thumbTried==='1')return;
+    const id=card.dataset.watch||'';
+    if(!ID.test(String(id)))return;
+    const art=card.querySelector('.card-art');
+    if(!art)return;
+    card.dataset.thumbTried='1';
+    const sources=thumbSources(id);
+    let index=0;
+    const tryNext=()=>{
+      if(index>=sources.length)return;
+      const url=sources[index++];
+      const probe=new Image();
+      probe.decoding='async';
+      probe.onload=()=>{
+        art.style.backgroundImage='url("'+url+'")';
+        art.style.backgroundSize='cover';
+        art.style.backgroundPosition='center';
+        card.classList.add('has-thumb');
+      };
+      probe.onerror=tryNext;
+      probe.src=url;
+    };
+    tryNext();
+  };
+  const hydrateThumbs=(scope)=>{
+    const root=scope||document;
+    root.querySelectorAll('a.video-card[data-watch]').forEach(hydrateThumb);
+  };
+  // Statik raylar (Son yayınlar / Merak uyandıranlar) dahil hepsini giydir
+  hydrateThumbs(document);
+  window.addEventListener('load',()=>hydrateThumbs(document),{once:true});
+  [400,1200,2600,4500].forEach((ms)=>setTimeout(()=>hydrateThumbs(document),ms));
+
   const rail=document.getElementById('recent-rail');
   const status=document.getElementById('feed-status');
   const saved=new Map([...rail.querySelectorAll('[data-watch]')].map((card)=>[card.dataset.watch,card]));
@@ -388,7 +432,7 @@ dialog::backdrop{background:rgba(0,8,12,.83);backdrop-filter:blur(10px)}
         const seen=new Set();const cards=[];
         for(const item of data.items){const id=videoId(item);if(!id||seen.has(id)||!item.title)continue;seen.add(id);const known=saved.get(id);cards.push(known?known.cloneNode(true):makeCard(id,item.title));}
         if(cards.length<3)throw Error('incomplete feed');
-        rail.replaceChildren(...cards);status.textContent='Kanalın son yayınları';
+        rail.replaceChildren(...cards);status.textContent='Kanalın son yayınları';hydrateThumbs(rail);
       })
       .catch(()=>{status.textContent='Kanaldan seçilen videolar';})
       .finally(()=>clearTimeout(timer));
@@ -445,6 +489,7 @@ dialog::backdrop{background:rgba(0,8,12,.83);backdrop-filter:blur(10px)}
     cards.push(moreCard(ctaLabel));
     el.replaceChildren(...cards);
     if(note)note.textContent=noteText;
+    hydrateThumbs(el);
   };
   if(typeof fetch==='function'&&document.getElementById('top-shorts-rail')){
     const liveController=new AbortController();

@@ -201,6 +201,14 @@
                 </div>
               </div>
             </div>
+            <div v-if="s.buyuk_dosyalar && s.buyuk_dosyalar.length" style="margin-top:10px;border-top:1px dashed #eef1f5;padding-top:8px">
+              <div style="font-size:11.5px;color:#8a8a8a;margin-bottom:6px">En büyük dosyalar:</div>
+              <div v-for="(f, i) in s.buyuk_dosyalar" :key="i"
+                   style="display:flex;justify-content:space-between;font-size:11.5px;padding:2px 0">
+                <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:70%">{{ f.ad }}</span>
+                <span style="color:#8a8a8a;flex-shrink:0">{{ boyut(f.boyut) }}</span>
+              </div>
+            </div>
             <div v-if="s.not_" style="font-size:11.5px;color:#a8a8a8;margin-top:6px">{{ s.not_ }}</div>
           </div>
         </div>

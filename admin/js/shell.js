@@ -99,11 +99,18 @@
   const ShellView = {
     name: 'ShellView',
     data() {
-      return { menu: MENU, titles: TITLES, now: Date.now() };
+      return {
+        menu: MENU,
+        titles: TITLES,
+        now: Date.now(),
+        isMobile: window.innerWidth < 900,
+        drawerOpen: false
+      };
     },
     computed: {
       s() { return store; },
       view() { return store.view; },
+      menuCollapsed() { return !this.isMobile && store.sidebarCollapsed; },
       pageMeta() { return TITLES[store.view] || { title: 'Kontrol Paneli', group: 'Operasyon' }; },
       currentComponent() {
         const c = window.VIEWS[store.view];
@@ -135,8 +142,21 @@
       }
     },
     methods: {
-      select(key) { location.hash = '#/' + key; },
-      toggleSidebar() { store.sidebarCollapsed = !store.sidebarCollapsed; },
+      select(key) {
+        location.hash = '#/' + key;
+        if (this.isMobile) this.drawerOpen = false;
+      },
+      toggleSidebar() {
+        if (this.isMobile) this.drawerOpen = !this.drawerOpen;
+        else store.sidebarCollapsed = !store.sidebarCollapsed;
+      },
+      onResize() {
+        const mobile = window.innerWidth < 900;
+        if (mobile !== this.isMobile) {
+          this.isMobile = mobile;
+          if (!mobile) this.drawerOpen = false;
+        }
+      },
       refresh() {
         store.notify('info', 'Canlı veriler yenileniyor…');
         store.autoRefresh();
@@ -150,22 +170,26 @@
       }
     },
     mounted() {
+      window.addEventListener('resize', this.onResize);
       this.timer = setInterval(() => { this.now = Date.now(); }, 1000);
       this.auto = setInterval(() => { store.autoRefresh(); }, 30000);
       this.clock = setInterval(() => { store.tick++; }, 30000);
     },
     beforeUnmount() {
+      window.removeEventListener('resize', this.onResize);
       clearInterval(this.timer); clearInterval(this.auto); clearInterval(this.clock);
     },
     template: `
       <div class="app-shell">
-        <aside class="sidebar" :class="{ collapsed: s.sidebarCollapsed }">
+        <div v-if="isMobile && drawerOpen" class="sidebar-backdrop" @click="drawerOpen = false"></div>
+        <aside class="sidebar" :class="{ collapsed: menuCollapsed, open: drawerOpen }">
           <div class="sidebar-logo">
             <div class="mark">B</div>
-            <div class="name" v-show="!s.sidebarCollapsed">BİLGİ DOZU<small>AUTOMATION OPS</small></div>
+            <div class="name" v-show="!menuCollapsed">BİLGİ DOZU<small>AUTOMATION OPS</small></div>
+            <el-icon v-if="isMobile" class="sidebar-close" @click="drawerOpen = false"><Close /></el-icon>
           </div>
           <div class="sidebar-scroll">
-            <el-menu :default-active="view" :collapse="s.sidebarCollapsed" unique-opened
+            <el-menu :default-active="view" :collapse="menuCollapsed" unique-opened
                      background-color="#304156" text-color="#bfcbd9" active-text-color="#409eff" @select="select">
               <el-sub-menu v-for="g in menu" :key="g.title" :index="g.title">
                 <template #title>
@@ -179,7 +203,7 @@
               </el-sub-menu>
             </el-menu>
           </div>
-          <div class="sidebar-foot" v-show="!s.sidebarCollapsed">
+          <div class="sidebar-foot" v-show="!menuCollapsed">
             <div>v2.6 · main</div>
             <div class="mono-sm" style="color:#5f7186">{{ s.repo }}@{{ s.branch }}</div>
           </div>
@@ -187,7 +211,10 @@
 
         <div class="main-wrap">
           <header class="topbar">
-            <div class="hamburger" @click="toggleSidebar"><el-icon><Fold v-if="!s.sidebarCollapsed" /><Expand v-else /></el-icon></div>
+            <div class="hamburger" @click="toggleSidebar">
+              <el-icon v-if="isMobile"><component :is="drawerOpen ? 'Close' : 'Menu'" /></el-icon>
+              <el-icon v-else><Fold v-if="!s.sidebarCollapsed" /><Expand v-else /></el-icon>
+            </div>
             <div class="crumbs">
               <span>Kontrol Merkezi</span><el-icon><ArrowRight /></el-icon><b>{{ pageMeta.title }}</b>
             </div>

@@ -58,8 +58,9 @@ code, pre, .mono { font-family: "SFMono-Regular", Consolas, "Liberation Mono", M
 .app-shell { display: flex; height: 100vh; overflow: hidden; }
 .sidebar {
   width: 214px; flex: 0 0 214px; background: var(--bd-sidebar); display: flex; flex-direction: column;
-  transition: width .24s ease, flex-basis .24s ease; overflow: hidden;
+  transition: width .24s ease, flex-basis .24s ease, transform .24s ease; overflow: hidden;
 }
+.sidebar-close { display: none; }
 .sidebar.collapsed { width: 62px; flex-basis: 62px; }
 .sidebar-logo {
   height: 52px; display: flex; align-items: center; gap: 10px; padding: 0 14px;
@@ -203,11 +204,25 @@ code, pre, .mono { font-family: "SFMono-Regular", Consolas, "Liberation Mono", M
 
 /* ---------- Responsive ---------- */
 @media (max-width: 1024px) {
-  .sidebar { width: 62px; flex-basis: 62px; }
-  .sidebar .name, .sidebar .sidebar-foot { display: none; }
   .content { padding: 12px; }
   .page-head h2 { font-size: 17px; }
   .crumbs span:first-child { display: none; }
+}
+/* Mobil: sol menü içerik üstüne açılan çekmece olur (kırpılma/açılır menü arkada kalma sorunu biter) */
+@media (max-width: 900px) {
+  .sidebar {
+    position: fixed; left: 0; top: 0; bottom: 0; z-index: 2005;
+    width: 232px; flex-basis: 232px; transform: translateX(-102%);
+    transition: transform .24s ease; box-shadow: 6px 0 24px rgba(0,0,0,.28);
+  }
+  .sidebar.open { transform: none; }
+  .sidebar.collapsed { width: 232px; flex-basis: 232px; }
+  .sidebar-close { display: inline-flex; margin-left: auto; color: #8fa3b8; cursor: pointer; font-size: 18px; }
+  .sidebar-backdrop { position: fixed; inset: 0; background: rgba(0, 0, 0, .45); z-index: 2000; }
+  .topbar { padding: 0 10px; gap: 8px; }
+  .page-head .head-actions { width: 100%; }
+  .el-dialog { width: 94% !important; }
+  .el-message-box { width: 90% !important; }
 }
 @media (max-width: 760px) {
   .topbar-right .muted, .topbar-right .el-tag { display: none; }

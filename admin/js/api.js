@@ -597,6 +597,18 @@
       return this.gh(`/repos/${CFG.owner}/${CFG.repo}/contents/${path}`, { method: 'PUT', body });
     },
 
+    /* Binary (kapak görseli) commit — base64 gövde doğrudan gönderilir */
+    async commitBinary(path, base64, message) {
+      let sha = null;
+      try {
+        const cur = await this.getContent(path);
+        sha = cur.sha;
+      } catch (e) { /* dosya yok -> oluştur */ }
+      const body = { message: message, content: base64, branch: CFG.branch };
+      if (sha) body.sha = sha;
+      return this.gh(`/repos/${CFG.owner}/${CFG.repo}/contents/${path}`, { method: 'PUT', body });
+    },
+
     async saveTextFile(path, text, message) {
       let sha = null;
       try {

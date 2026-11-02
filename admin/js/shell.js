@@ -18,7 +18,8 @@
       title: 'İçerik', icon: 'Files', children: [
         { key: 'queue', title: 'Video Kuyruğu', icon: 'List' },
         { key: 'excel', title: 'Excel Tablo', icon: 'Document' },
-        { key: 'drive', title: 'Drive Envanteri', icon: 'FolderOpened' }
+        { key: 'drive', title: 'Drive Envanteri', icon: 'FolderOpened' },
+        { key: 'kapak', title: 'Kapak Yükle', icon: 'Picture' }
       ]
     },
     {

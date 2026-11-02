@@ -81,6 +81,10 @@
         const out = [];
         if (s.actions_dakika !== undefined) out.push(`Actions: ${this.sayi(s.actions_dakika)} dk kullanıldı (${s.actions_kosu} koşu)`);
         if (s.ad === 'GitHub' && s.limit) out.push(`panel API: ${this.sayi(s.kalan)} / ${this.sayi(s.limit)} istek/saat`);
+        if (s.ad === 'Google Drive' && s.drive_gorunen !== undefined) {
+          out.push('Drive dosyaları: ' + this.boyut(s.drive_gorunen));
+          out.push('Drive dışı (Gmail/Fotoğraflar): ' + this.boyut(s.disalan));
+        }
         if (s.bugun_yukleme !== undefined) out.push(`bugün ${s.bugun_yukleme} yükleme`);
         if (s.reset_iso) out.push('yenilenme: ' + s.reset_iso.slice(0, 10));
         if (s.tier) out.push('plan: ' + s.tier);

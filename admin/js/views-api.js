@@ -53,7 +53,7 @@
         return Math.max(0, Math.min(100, (s.kalan / s.limit) * 100));
       },
       kirilimYuzde(s, k) {
-        const toplam = (s.kirilim || []).reduce((a, x) => a + (x.boyut || 0), 0) || 1;
+        const toplam = s.kullanilan || (s.kirilim || []).reduce((a, x) => a + (x.boyut || 0), 0) || 1;
         return Math.max(0.5, (k.boyut || 0) / toplam * 100);
       },
       barRenk(p) {
@@ -81,9 +81,10 @@
         const out = [];
         if (s.actions_dakika !== undefined) out.push(`Actions: ${this.sayi(s.actions_dakika)} dk kullanıldı (${s.actions_kosu} koşu)`);
         if (s.ad === 'GitHub' && s.limit) out.push(`panel API: ${this.sayi(s.kalan)} / ${this.sayi(s.limit)} istek/saat`);
-        if (s.ad === 'Google Drive' && s.drive_gorunen !== undefined) {
-          out.push('Drive dosyaları: ' + this.boyut(s.drive_gorunen));
-          out.push('Drive dışı (Gmail/Fotoğraflar): ' + this.boyut(s.disalan));
+        if (s.ad === 'Google Drive' && s.kendi_dosyalar !== undefined) {
+          out.push('kendi dosyalarım: ' + this.boyut(s.kendi_dosyalar));
+          out.push('Gmail/Fotoğraflar: ' + this.boyut(s.disalan));
+          if (s.paylasilan) out.push('paylaşılan (kota başkasında): ' + this.boyut(s.paylasilan));
         }
         if (s.bugun_yukleme !== undefined) out.push(`bugün ${s.bugun_yukleme} yükleme`);
         if (s.reset_iso) out.push('yenilenme: ' + s.reset_iso.slice(0, 10));
@@ -198,7 +199,7 @@
               <div v-for="k in s.kirilim" :key="k.ad" style="margin-bottom:5px">
                 <div style="display:flex;justify-content:space-between;font-size:11.5px">
                   <span>{{ k.ad }}</span>
-                  <span style="color:#8a8a8a">{{ boyut(k.boyut) }} · {{ k.dosya }} dosya</span>
+                  <span style="color:#8a8a8a">{{ boyut(k.boyut) }} · {{ k.dosya }} dosya<template v-if="k.sahip"> · {{ k.sahip.includes(',') ? 'ortak' : k.sahip }}</template></span>
                 </div>
                 <div style="height:5px;background:#f2f5f8;border-radius:3px;overflow:hidden">
                   <div :style="{ width: kirilimYuzde(s, k) + '%', height:'100%', background:'#7aa7e0' }"></div>

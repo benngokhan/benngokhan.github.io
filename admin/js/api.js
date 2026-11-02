@@ -557,6 +557,15 @@
       }
     },
 
+    /* Binary dosyayı blob URL olarak aç (özel repoda ses/görsel oynatmak için) */
+    async getMediaUrl(path) {
+      const res = await fetch(`${CFG.api}/repos/${CFG.owner}/${CFG.repo}/contents/${path}?ref=${CFG.branch}`, {
+        headers: { Authorization: 'Bearer ' + this.token, Accept: 'application/vnd.github.raw' }
+      });
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      return URL.createObjectURL(await res.blob());
+    },
+
     /* repository_dispatch — gizli veri (ör. API anahtarı) git geçmişine yazılmadan CI'ya gider */
     async repoDispatch(eventType, payload) {
       return this.gh(`/repos/${CFG.owner}/${CFG.repo}/dispatches`, {

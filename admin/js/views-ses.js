@@ -29,7 +29,15 @@
         kilitBusy: '',
         model: 'eleven_multilingual_v2',
         beklemede: false,
-        zaman: ''
+        zaman: '',
+        aciklama: 'Türkçe, 30-40 yaş erkek anlatıcı; sıcak, sakin ve güven veren ton; belgesel sunucusu gibi net telaffuz; hafif alçak perde, orta tempo, abartılı duygu yok.',
+        ornek: 'Buz, eksi derecelerde neden kaygan hale gelir? Bilim insanları bunu uzun süre tartıştı. Bugün biliyoruz ki yüzeyde ince bir sıvı filmi oluşuyor ve kayganlık tam olarak bu filmden geliyor.',
+        ttvModel: 'eleven_multilingual_ttv_v2',
+        tasarimBusy: false,
+        onizleme: null,
+        onizlemeUrl: {},
+        kaydetBusy: '',
+        sesAdi: 'Bilgi Dozu Anlatıcı'
       };
     },
     computed: {
@@ -117,6 +125,55 @@
           this.kilitBusy = '';
         }
       },
+      async onizlemeYukle() {
+        try {
+          const txt = await this.s.getRawText('ses_onizleme.json');
+          if (!txt) { this.onizleme = null; return; }
+          this.onizleme = JSON.parse(txt);
+          for (const o of this.onizleme.onizlemeler || []) {
+            if (!this.onizlemeUrl[o.id]) {
+              try { this.onizlemeUrl[o.id] = await this.s.getMediaUrl(o.dosya); } catch (e) { /* yut */ }
+            }
+          }
+        } catch (e) { this.s.notify('error', 'Önizlemeler okunamadı: ' + (e.message || e)); }
+      },
+      async tasarla() {
+        const a = (this.aciklama || '').trim();
+        const o = (this.ornek || '').trim();
+        if (a.length < 20) { this.s.notify('error', 'Açıklama en az 20 karakter olmalı.'); return; }
+        if (o.length < 100) { this.s.notify('error', 'Örnek metin en az 100 karakter olmalı.'); return; }
+        this.tasarimBusy = true;
+        try {
+          await this.s.repoDispatch('ses_design', {
+            aciklama: a, ornek: o, ttv_model: this.ttvModel
+          });
+          this.s.notify('success', 'Ses tasarlanıyor — 30-60 saniye, sonra 3 aday burada çıkacak.');
+          this.bekle();
+          setTimeout(() => this.onizlemeYukle(), 45000);
+        } catch (e) {
+          this.s.notify('error', 'Tetiklenemedi: ' + (e.message || e));
+        } finally {
+          this.tasarimBusy = false;
+        }
+      },
+      async secVeKilitle(o) {
+        this.kaydetBusy = o.id;
+        try {
+          await this.s.repoDispatch('ses_kaydet', {
+            generated_voice_id: o.id,
+            ad: this.sesAdi || 'Bilgi Dozu Anlatıcı',
+            ses_aciklama: this.aciklama,
+            tts_model: 'eleven_multilingual_v2'
+          });
+          this.s.notify('success', 'Ses kütüphaneye ekleniyor ve kilitlenecek — ~40 saniye.');
+          this.bekle();
+          setTimeout(() => this.yukle(true), 45000);
+        } catch (e) {
+          this.s.notify('error', 'Kaydedilemedi: ' + (e.message || e));
+        } finally {
+          this.kaydetBusy = '';
+        }
+      },
       kopyala(text) {
         try {
           navigator.clipboard.writeText(text);
@@ -126,7 +183,7 @@
         }
       }
     },
-    mounted() { this.yukle(); },
+    mounted() { this.yukle(); this.onizlemeYukle(); },
     template: `
       <div>
         <div class="page-head">
@@ -204,6 +261,46 @@
                    :title="trZaman(g.zaman) + ' · ' + (g.kalan || 0)"
                    :style="{ flex: '1 1 0', height: Math.max(4, (g.kalan || 0) / gecmisMax * 60) + 'px',
                              background: '#409eff', borderRadius: '3px', opacity: 0.35 + (0.65 * i / gecmis.length) }"></div>
+            </div>
+          </div>
+
+          <div class="card">
+            <h3 style="margin-top:0">Yapay ses üret <span style="font-weight:400;color:#8a8a8a;font-size:12px">
+              (Voice Design · 3 aday)</span></h3>
+            <p style="font-size:12.5px;color:#8a8a8a;margin:0 0 8px">
+              Ses tarifini yaz → 3 aday üretilir → beğendiğini dinle ve kilitle. Kaydedilen ses
+              <code>ses/voice.json</code>'a yazılır, üretim onu kullanır.
+            </p>
+            <el-input v-model="aciklama" type="textarea" :rows="3" size="small"
+                      placeholder="Ses tarifi (20-1000 karakter)" style="margin-bottom:8px" />
+            <el-input v-model="ornek" type="textarea" :rows="3" size="small"
+                      placeholder="Önizleme metni (100-1000 karakter)" style="margin-bottom:8px" />
+            <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px">
+              <el-select v-model="ttvModel" size="small" style="flex:1">
+                <el-option label="eleven_multilingual_ttv_v2 · çok dilli" value="eleven_multilingual_ttv_v2" />
+                <el-option label="eleven_ttv_v3 · daha doğal, deneysel" value="eleven_ttv_v3" />
+              </el-select>
+              <el-button size="small" type="primary" :loading="tasarimBusy" @click="tasarla">Önizleme üret</el-button>
+            </div>
+
+            <div v-if="onizleme">
+              <div style="font-size:11.5px;color:#8a8a8a;margin-bottom:6px">
+                {{ onizleme.zaman }} · kredi farkı: {{ onizleme.kredi_farki === null ? '?' : onizleme.kredi_farki }}
+              </div>
+              <div v-for="o in onizleme.onizlemeler" :key="o.id"
+                   style="border:1px solid #eef1f5;border-radius:10px;padding:8px;margin-bottom:8px">
+                <div style="display:flex;align-items:center;gap:8px">
+                  <span style="font-size:11px;color:#8a8a8a;font-family:ui-monospace,monospace">{{ o.id.slice(0, 12) }}…</span>
+                  <el-button size="small" type="primary" plain style="margin-left:auto"
+                             :loading="kaydetBusy === o.id" @click="secVeKilitle(o)">Bu sesi kilitle</el-button>
+                </div>
+                <audio v-if="onizlemeUrl[o.id]" :src="onizlemeUrl[o.id]" controls
+                       style="width:100%;margin-top:6px;height:34px"></audio>
+              </div>
+              <div class="kv">
+                <span>Ses adı (kütüphanede görünecek)</span>
+                <el-input v-model="sesAdi" size="small" style="width:180px" />
+              </div>
             </div>
           </div>
 

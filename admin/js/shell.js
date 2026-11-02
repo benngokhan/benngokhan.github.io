@@ -20,7 +20,8 @@
         { key: 'excel', title: 'Excel Tablo', icon: 'Document' },
         { key: 'drive', title: 'Drive Envanteri', icon: 'FolderOpened' },
         { key: 'kapak', title: 'Kapak Yükle', icon: 'Picture' },
-        { key: 'ses', title: 'Ses & Kredi', icon: 'Microphone' }
+        { key: 'ses', title: 'Ses & Kredi', icon: 'Microphone' },
+        { key: 'api', title: 'API & Kota', icon: 'Coin' }
       ]
     },
     {

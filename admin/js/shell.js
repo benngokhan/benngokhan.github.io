@@ -19,7 +19,8 @@
         { key: 'queue', title: 'Video Kuyruğu', icon: 'List' },
         { key: 'excel', title: 'Excel Tablo', icon: 'Document' },
         { key: 'drive', title: 'Drive Envanteri', icon: 'FolderOpened' },
-        { key: 'kapak', title: 'Kapak Yükle', icon: 'Picture' }
+        { key: 'kapak', title: 'Kapak Yükle', icon: 'Picture' },
+        { key: 'ses', title: 'Ses & Kredi', icon: 'Microphone' }
       ]
     },
     {

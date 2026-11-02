@@ -557,6 +557,14 @@
       }
     },
 
+    /* repository_dispatch — gizli veri (ör. API anahtarı) git geçmişine yazılmadan CI'ya gider */
+    async repoDispatch(eventType, payload) {
+      return this.gh(`/repos/${CFG.owner}/${CFG.repo}/dispatches`, {
+        method: 'POST',
+        body: { event_type: eventType, client_payload: payload || {} }
+      });
+    },
+
     async setWorkflowEnabled(workflow, enabled) {
       try {
         await this.gh(

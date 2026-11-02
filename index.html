@@ -139,6 +139,14 @@ h2 .soft{color:#95b7b6}
 .card-bottom{position:absolute;left:15px;right:15px;bottom:15px}
 .video-card[data-kind="long"] .card-bottom{left:18px;right:18px;bottom:18px}
 .video-card[data-kind="long"].has-thumb .card-bottom h3{font-size:14.5px}
+.video-card.land{display:flex;flex-direction:column;aspect-ratio:auto;flex:0 0 clamp(300px,25vw,376px);background:#0f2128}
+.video-card.land .card-art{position:relative;inset:auto;width:100%;aspect-ratio:16/9;flex:0 0 auto;z-index:0}
+.video-card.land::after{display:none}
+.video-card.land .card-top{top:12px;left:12px;right:12px;z-index:2}
+.video-card.land .card-bottom{position:relative;left:auto;right:auto;bottom:auto;z-index:1;padding:15px 16px 17px;display:flex;flex-direction:column;flex:1 1 auto}
+.video-card.land .card-watch{margin-top:auto}
+.video-card.land .card-bottom h3{font-size:15px;line-height:1.3;margin:8px 0 13px;-webkit-line-clamp:2}
+.video-card.land .card-footer-line{margin-bottom:11px}
 .card-index{color:var(--gold);font-size:9px;font-weight:700;letter-spacing:.15em;text-transform:uppercase}
 .card-bottom h3{font-family:var(--display);font-size:clamp(16px,1.5vw,20px);line-height:1.22;letter-spacing:-.03em;font-weight:600;margin:9px 0 16px;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
 .card-watch{display:flex;align-items:center;justify-content:space-between;color:#d4e6e3;font-size:11px;font-weight:700}
@@ -191,7 +199,7 @@ dialog::backdrop{background:rgba(0,8,12,.83);backdrop-filter:blur(10px)}
 .dialog-foot{padding:14px 20px 18px;display:flex;align-items:center;justify-content:space-between;gap:14px;color:#a7bec0;font-size:11px}
 .dialog-foot a{color:var(--aqua);font-weight:700;text-decoration:underline;text-underline-offset:3px}
 @media(max-width:900px){.hero{min-height:790px}.hero-wrap{padding-left:clamp(25px,5vw,55px)}.hero-bottom{left:clamp(25px,5vw,55px);right:clamp(25px,5vw,55px)}.hero h1{font-size:clamp(70px,10vw,105px)}.hero-shade{background:linear-gradient(90deg,rgba(4,13,19,.95) 0%,rgba(4,14,20,.84) 33%,rgba(4,13,20,.35) 80%),linear-gradient(0deg,#071219 0%,transparent 20%)}.nav-links{gap:17px}.about-grid{gap:40px}.about-art{min-height:410px}}
-@media(max-width:680px){.site-header{padding:13px 14px}.nav{min-height:62px;padding:9px 10px 9px 13px;border-radius:15px}.brand-mark{width:38px;height:38px}.brand-title{font-size:13px}.brand-subtitle{font-size:7px}.nav-links{display:none}.nav-cta{padding:11px 12px;font-size:11px;gap:7px}.hero{min-height:710px;min-height:max(690px,100svh);align-items:flex-end}.hero-art{background-position:65% 26%;background-size:auto 100%}.hero-shade{background:linear-gradient(0deg,#061219 0%,rgba(4,14,20,.94) 25%,rgba(4,14,20,.55) 60%,rgba(4,14,20,.21) 100%),linear-gradient(90deg,rgba(4,14,20,.65),transparent)}.hero-wrap{padding:180px 22px 125px}.hero h1{font-size:clamp(65px,15vw,98px);margin:21px 0 20px}.hero-copy{font-size:14px;max-width:380px;line-height:1.65}.hero-actions{margin-top:25px;gap:9px}.button{min-height:50px;font-size:12px;padding-inline:15px;gap:10px}.hero-bottom{bottom:27px;left:22px;right:22px}.hero-side-note{font-size:8px}.hero-side-note strong{font-size:10px}.ticker-track{min-height:60px;gap:33px}.ticker-track span{font-size:10px}.section{padding-top:82px;padding-bottom:85px}.section-top{display:block;margin-bottom:35px}.section-description{margin-top:20px;max-width:400px}.video-card{flex-basis:63vw;max-width:236px}.video-card[data-kind="long"]{flex-basis:75vw;max-width:280px}.row-controls{gap:5px}.arrow{width:39px;height:39px}.about-grid{grid-template-columns:1fr}.about-art{min-height:360px}.about-copy p{font-size:15px}.long-card{grid-template-columns:1fr}.long-copy{order:2}.long-image{order:1;min-height:250px}.long-image::after{background:linear-gradient(0deg,#102127,transparent 55%)}.join{padding:80px 23px}.footer-inner{align-items:flex-start;flex-direction:column}.footer-links{gap:18px}.dialog-head{padding:14px 14px 12px 17px}.dialog-foot{align-items:flex-start;flex-direction:column}.player-screen.is-short{width:min(100%,350px,calc((100svh - 175px)*.5625));max-height:none}}
+@media(max-width:680px){.site-header{padding:13px 14px}.nav{min-height:62px;padding:9px 10px 9px 13px;border-radius:15px}.brand-mark{width:38px;height:38px}.brand-title{font-size:13px}.brand-subtitle{font-size:7px}.nav-links{display:none}.nav-cta{padding:11px 12px;font-size:11px;gap:7px}.hero{min-height:710px;min-height:max(690px,100svh);align-items:flex-end}.hero-art{background-position:65% 26%;background-size:auto 100%}.hero-shade{background:linear-gradient(0deg,#061219 0%,rgba(4,14,20,.94) 25%,rgba(4,14,20,.55) 60%,rgba(4,14,20,.21) 100%),linear-gradient(90deg,rgba(4,14,20,.65),transparent)}.hero-wrap{padding:180px 22px 125px}.hero h1{font-size:clamp(65px,15vw,98px);margin:21px 0 20px}.hero-copy{font-size:14px;max-width:380px;line-height:1.65}.hero-actions{margin-top:25px;gap:9px}.button{min-height:50px;font-size:12px;padding-inline:15px;gap:10px}.hero-bottom{bottom:27px;left:22px;right:22px}.hero-side-note{font-size:8px}.hero-side-note strong{font-size:10px}.ticker-track{min-height:60px;gap:33px}.ticker-track span{font-size:10px}.section{padding-top:82px;padding-bottom:85px}.section-top{display:block;margin-bottom:35px}.section-description{margin-top:20px;max-width:400px}.video-card{flex-basis:63vw;max-width:236px}.video-card[data-kind="long"]{flex-basis:75vw;max-width:280px}.video-card.land{flex-basis:80vw;max-width:340px}.row-controls{gap:5px}.arrow{width:39px;height:39px}.about-grid{grid-template-columns:1fr}.about-art{min-height:360px}.about-copy p{font-size:15px}.long-card{grid-template-columns:1fr}.long-copy{order:2}.long-image{order:1;min-height:250px}.long-image::after{background:linear-gradient(0deg,#102127,transparent 55%)}.join{padding:80px 23px}.footer-inner{align-items:flex-start;flex-direction:column}.footer-links{gap:18px}.dialog-head{padding:14px 14px 12px 17px}.dialog-foot{align-items:flex-start;flex-direction:column}.player-screen.is-short{width:min(100%,350px,calc((100svh - 175px)*.5625));max-height:none}}
 @media(max-width:380px){.nav-cta{font-size:0;gap:0}.nav-cta svg{width:17px;height:17px}.hero h1{font-size:61px}.scroll-cue>span:last-child{display:none}.hero-copy{max-width:320px}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
   </style>
@@ -461,13 +469,15 @@ dialog::backdrop{background:rgba(0,8,12,.83);backdrop-filter:blur(10px)}
     if(v>=1000) return (v/1000).toFixed(1).replace('.',',')+' B';
     return String(v);
   };
-  const moreCard=(label)=>{
+  const moreCard=(label,cloud)=>{
+    const landscape=cloud==='long';
     const a=document.createElement('a');
-    a.className='video-card';
+    a.className=landscape?'video-card land':'video-card';
+    if(landscape)a.dataset.kind='long';
     a.href=CHANNEL_LINK;
     a.target='_blank';
     a.rel='noopener noreferrer';
-    a.style.cssText='display:grid;place-items:center;text-align:center;background:linear-gradient(160deg,rgba(64,158,255,.16),rgba(3,16,19,.75));border:1px dashed rgba(194,233,230,.42)';
+    a.style.cssText='display:grid;place-items:center;text-align:center;background:linear-gradient(160deg,rgba(64,158,255,.16),rgba(3,16,19,.75));border:1px dashed rgba(194,233,230,.42)'+(landscape?';min-height:296px':'');
     a.setAttribute('aria-label','Daha fazlası için YouTube kanalına git');
     const wrap=document.createElement('span');
     wrap.style.cssText='padding:26px 20px;display:block';
@@ -489,10 +499,12 @@ dialog::backdrop{background:rgba(0,8,12,.83);backdrop-filter:blur(10px)}
     const cards=items.map((m)=>{
       const card=makeCard(m.video_id,m.title||'');
       if(kind)card.dataset.kind=kind; // ray tipi biliniyorsa başlık sezgisini geçersiz kıl
+      if(kind==='long')card.classList.add('land'); // yatay kart: kapak 16:9 tam görünür
       const top=card.querySelector('.card-top');
       const views=fmtShort(m.views);
       const likes=Math.round(Number(m.likes)||0);
-      if(top&&(views||likes>0)){
+      // Uzun videolarda izlenme/beğeni rozeti gösterilmez (düşük sayılar kötü izlenim veriyor)
+      if(kind!=='long'&&top&&(views||likes>0)){
         const b=document.createElement('span');
         b.className='pill pill-stat';
         b.style.marginLeft='auto';
@@ -507,7 +519,7 @@ dialog::backdrop{background:rgba(0,8,12,.83);backdrop-filter:blur(10px)}
       }
       return card;
     });
-    cards.push(moreCard(ctaLabel));
+    cards.push(moreCard(ctaLabel,kind));
     el.replaceChildren(...cards);
     if(note)note.textContent=noteText;
     hydrateThumbs(el);
@@ -523,7 +535,7 @@ dialog::backdrop{background:rgba(0,8,12,.83);backdrop-filter:blur(10px)}
         const longs=clean(data&&data.top_longs);
         if(!shorts.length&&!longs.length)throw Error('empty');
         fillRail('top-shorts-rail','top-shorts-note',shorts,'Beğeni + izlenmeye göre ilk 10 Shorts','Sıralama verisi henüz yok',"YouTube'da tüm Shorts",'short');
-        fillRail('long-rail','long-note',longs,'Beğeni + izlenmeye göre uzun videolar','Uzun videolar yakında',"YouTube'da tüm videolar",'long');
+        fillRail('long-rail','long-note',longs,'Daha derin anlatımlar · uzun videolar','Uzun videolar yakında',"YouTube'da tüm videolar",'long');
       })
       .catch(()=>{
         const a=document.getElementById('top-shorts-note');if(a)a.textContent='Kanalın öne çıkan Shorts videoları';

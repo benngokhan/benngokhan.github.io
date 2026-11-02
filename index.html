@@ -11,6 +11,15 @@
   <meta name="referrer" content="strict-origin-when-cross-origin">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data: https://i.ytimg.com https://img.youtube.com https://hits.sh; media-src 'self' data:; font-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; connect-src 'self' https://api.rss2json.com; frame-src https://www.youtube-nocookie.com https://www.youtube.com; object-src 'none'; base-uri 'none'; form-action 'none'">
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='18' fill='%23051a20'/%3E%3Cpath d='M32 9l4.8 17.2L54 31l-17.2 4.8L32 53l-4.8-17.2L10 31l17.2-4.8z' fill='%238de7e5'/%3E%3C/svg%3E">
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="icon" type="image/png" sizes="32x32" href="./assets/icons/favicon-32.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="./assets/icons/icon-192.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="./assets/icons/apple-touch-icon-180.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Bilgi Dozu">
+  <meta name="application-name" content="Bilgi Dozu">
   <title>Bilgi Dozu — Merakla başlar</title>
   <style>
 /* latin-ext */
@@ -601,6 +610,14 @@ dialog::backdrop{background:rgba(0,8,12,.83);backdrop-filter:blur(10px)}
       .finally(()=>clearTimeout(liveTimer));
   }
 })();
+  </script>
+  <script>
+    // PWA: "Ana ekrana ekle" ile gerçek uygulama olarak yüklenebilmesi için
+    if ('serviceWorker' in navigator && (location.protocol === 'https:' || /^(localhost|127\.0\.0\.1)$/.test(location.hostname))) {
+      window.addEventListener('load', function () {
+        navigator.serviceWorker.register('./sw.js', { scope: './' }).catch(function () {});
+      });
+    }
   </script>
 </body>
 </html>

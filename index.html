@@ -385,8 +385,12 @@ dialog::backdrop{background:rgba(0,8,12,.83);backdrop-filter:blur(10px)}
       probe.decoding='async';
       probe.onload=()=>{
         art.style.backgroundImage='url("'+url+'")';
-        art.style.backgroundSize='cover';
+        // Yatay (16:9) kapak dikey kartta kırpılmasın: harf kutusu (contain) + koyu zemin
+        const landscapeCard=card.classList.contains('land');
+        const wideCover=card.dataset.kind==='long'&&!landscapeCard;
+        art.style.backgroundSize=wideCover?'contain':'cover';
         art.style.backgroundPosition='center';
+        if(wideCover)art.style.backgroundColor='#0b1a20';
         card.classList.add('has-thumb');
       };
       probe.onerror=tryNext;

@@ -81,6 +81,11 @@
 <script>
 (function () {
   const state = { promptFired: false, promptPlatform: '' };
+  // Bu sayfa da service worker'ı kaydeder; aksi halde taze profilde "kayıt yok"
+  // görünür ve Chrome'un kurulum koşulu yanlış raporlanır.
+  if ('serviceWorker' in navigator && (location.protocol === 'https:' || /^(localhost|127\.0\.0\.1)$/.test(location.hostname))) {
+    navigator.serviceWorker.register('./sw.js', { scope: './' }).catch(() => {});
+  }
   window.addEventListener('beforeinstallprompt', (e) => {
     state.promptFired = true;
     state.promptPlatform = e.platforms ? e.platforms.join(',') : '';
@@ -158,17 +163,23 @@
     let swTxt = 'serviceWorker API yok', swOk = false;
     if ('serviceWorker' in navigator) {
       try {
+        await Promise.race([
+          navigator.serviceWorker.ready,
+          new Promise((_, rej) => setTimeout(() => rej(new Error('zaman aşımı')), 6000)),
+        ]);
+      } catch (e) {}
+      try {
         const reg = await navigator.serviceWorker.getRegistration();
         if (!reg) { swTxt = 'kayıt yok'; }
         else {
           const active = !!reg.active;
           const ctrl = !!navigator.serviceWorker.controller;
           swOk = active && ctrl;
-          swTxt = 'scope ' + reg.scope + ' · aktif: ' + (active ? 'evet' : 'hayır') + ' · sayfayı kontrol: ' + (ctrl ? 'evet' : 'hayır');
+          swTxt = 'scope ' + reg.scope + ' · aktif: ' + (active ? 'evet' : 'hayır') + ' · sayfayı kontrol: ' + (ctrl ? 'evet' : 'hayır (ilk yüklemede normal)');
         }
       } catch (e) { swTxt = 'hata: ' + e.message; }
     }
-    set('sw', swOk, swTxt);
+    set('sw', swOk, swTxt, swOk ? 'ok' : (swTxt.indexOf('aktif: evet') >= 0 ? 'wait' : 'bad'));
     lines.push('service worker: ' + swTxt);
 
     // 5) install prompt (kısa bekleme)

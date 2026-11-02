@@ -262,6 +262,10 @@ dialog::backdrop{background:rgba(0,8,12,.83);backdrop-filter:blur(10px)}
             <span class="card-bottom"><span class="card-index">BİLGİ DOZU</span><h3>Güneşe Dönünce Hapşırıyor musun? Bu Bir Refleks: ACHOO!</h3><div class="card-footer-line"></div><span class="card-watch"><span>Videoyu izle</span><span class="card-play" aria-hidden="true"><svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="m8 5 11 7-11 7V5Z" fill="currentColor"/></svg></span></span></span>
           </a>
         </div>
+        <div class="row-head" id="top-shorts-head"><div><h3 class="row-title">En çok izlenen Shorts</h3><div class="row-note" id="top-shorts-note" aria-live="polite">Görüntülenme verisi yükleniyor…</div></div><div class="row-controls"><button class="arrow" type="button" data-rail="top-shorts-rail" data-direction="-1" aria-label="En çok izlenen Shorts geriye kaydır"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M19 12H5m6-6-6 6 6 6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></button><button class="arrow" type="button" data-rail="top-shorts-rail" data-direction="1" aria-label="En çok izlenen Shorts ileriye kaydır"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div></div>
+        <div class="rail" id="top-shorts-rail" aria-label="En çok izlenen Shorts"></div>
+        <div class="row-head" id="long-head"><div><h3 class="row-title">Uzun videolar</h3><div class="row-note" id="long-note" aria-live="polite">Derinlemesine anlatımlar yükleniyor…</div></div><div class="row-controls"><button class="arrow" type="button" data-rail="long-rail" data-direction="-1" aria-label="Uzun videolar geriye kaydır"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M19 12H5m6-6-6 6 6 6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></button><button class="arrow" type="button" data-rail="long-rail" data-direction="1" aria-label="Uzun videolar ileriye kaydır"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div></div>
+        <div class="rail" id="long-rail" aria-label="Uzun videolar"></div>
         <div class="row-head select-head"><div><h3 class="row-title">Merak uyandıranlar</h3><div class="row-note">Başlamak için bir keşif seç</div></div><div class="row-controls"><button class="arrow" type="button" data-rail="selected-rail" data-direction="-1" aria-label="Seçilen videolarda geriye kaydır"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M19 12H5m6-6-6 6 6 6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></button><button class="arrow" type="button" data-rail="selected-rail" data-direction="1" aria-label="Seçilen videolarda ileriye kaydır"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div></div>
         <div class="rail" id="selected-rail" aria-label="Seçilen videolar">
           <a class="video-card" href="https://www.youtube.com/watch?v=mANNR6Tf21o" data-watch="mANNR6Tf21o" data-kind="short" data-title="Burnun Nöbetleşe Çalışıyor: İki Delik Aynı Anda Eşit Nefes Almaz!" target="_blank" rel="noopener noreferrer" aria-label="Burnun Nöbetleşe Çalışıyor: İki Delik Aynı Anda Eşit Nefes Almaz! videosunu izle">
@@ -388,6 +392,78 @@ dialog::backdrop{background:rgba(0,8,12,.83);backdrop-filter:blur(10px)}
       })
       .catch(()=>{status.textContent='Kanaldan seçilen videolar';})
       .finally(()=>clearTimeout(timer));
+  }
+
+  // ── Canlı analitik: en çok izlenen Shorts (ilk 10) + uzun videolar ─────────
+  // Veri: benngokhan/yt_auto_uploader → panel_telemetry.json (30 dk'da bir güncellenir)
+  const CHANNEL_LINK='https://www.youtube.com/@bilgidozuofficial/videos';
+  const fmtViews=(n)=>{
+    const v=Number(n)||0;
+    if(v<=0) return '';
+    if(v>=1000000) return (v/1000000).toFixed(1).replace('.',',')+' Mn izlenme';
+    if(v>=1000) return (v/1000).toFixed(1).replace('.',',')+' B izlenme';
+    return v+' izlenme';
+  };
+  const moreCard=(label)=>{
+    const a=document.createElement('a');
+    a.className='video-card';
+    a.href=CHANNEL_LINK;
+    a.target='_blank';
+    a.rel='noopener noreferrer';
+    a.style.cssText='display:grid;place-items:center;text-align:center;background:linear-gradient(160deg,rgba(64,158,255,.16),rgba(3,16,19,.75));border:1px dashed rgba(194,233,230,.42)';
+    a.setAttribute('aria-label','Daha fazlası için YouTube kanalına git');
+    const wrap=document.createElement('span');
+    wrap.style.cssText='padding:26px 20px;display:block';
+    const t1=document.createElement('span');
+    t1.style.cssText='display:block;font-size:15px;font-weight:600;letter-spacing:-.01em;margin-bottom:7px;color:#eaf7f5';
+    t1.textContent='Daha fazlası için →';
+    const t2=document.createElement('span');
+    t2.style.cssText='display:block;font-size:11px;letter-spacing:.08em;opacity:.72;color:#c7e6e2';
+    t2.textContent=label;
+    wrap.append(t1,t2);
+    a.appendChild(wrap);
+    return a;
+  };
+  const fillRail=(railId,noteId,items,noteText,emptyText,ctaLabel)=>{
+    const el=document.getElementById(railId);
+    if(!el) return;
+    const note=document.getElementById(noteId);
+    if(!Array.isArray(items)||!items.length){ if(note)note.textContent=emptyText; return; }
+    const cards=items.map((m)=>{
+      const card=makeCard(m.video_id,m.title||'');
+      const top=card.querySelector('.card-top');
+      const views=fmtViews(m.views);
+      if(top&&views){
+        const b=document.createElement('span');
+        b.className='pill';
+        b.style.marginLeft='auto';
+        b.textContent=views;
+        top.appendChild(b);
+      }
+      return card;
+    });
+    cards.push(moreCard(ctaLabel));
+    el.replaceChildren(...cards);
+    if(note)note.textContent=noteText;
+  };
+  if(typeof fetch==='function'&&document.getElementById('top-shorts-rail')){
+    const liveController=new AbortController();
+    const liveTimer=setTimeout(()=>liveController.abort(),8000);
+    fetch('./data/shorts_top.json',{signal:liveController.signal,credentials:'omit',cache:'no-cache'})
+      .then((r)=>{if(!r.ok)throw Error('unavailable');return r.json()})
+      .then((data)=>{
+        const clean=(rows)=>Array.isArray(rows)?rows.filter((m)=>m&&ID.test(String(m.video_id||''))&&m.title):[];
+        const shorts=clean(data&&data.top_shorts);
+        const longs=clean(data&&data.top_longs);
+        if(!shorts.length&&!longs.length)throw Error('empty');
+        fillRail('top-shorts-rail','top-shorts-note',shorts,'Görüntülenmeye göre ilk 10 Shorts','Sıralama verisi henüz yok',"YouTube'da tüm Shorts");
+        fillRail('long-rail','long-note',longs,'En çok izlenen uzun videolar','Uzun videolar yakında',"YouTube'da tüm videolar");
+      })
+      .catch(()=>{
+        const a=document.getElementById('top-shorts-note');if(a)a.textContent='Kanalın öne çıkan Shorts videoları';
+        const b=document.getElementById('long-note');if(b)b.textContent='Kanalın uzun videoları';
+      })
+      .finally(()=>clearTimeout(liveTimer));
   }
 })();
   </script>

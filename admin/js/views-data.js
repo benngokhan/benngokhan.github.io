@@ -408,10 +408,14 @@
       coverMatrix() {
         const covers = (this.inv.shorts_covers || []).map((f) => f.name.toLowerCase());
         const longCovers = (this.inv.long_covers || []).map((f) => f.name.toLowerCase());
+        // Uzantıdan bağımsız TAM ad eşleşmesi (kapak_164.jpeg de geçerli).
+        // Gevşek "includes(num)" kontrolü 155 ile 1555'i karıştırıyordu.
         const check = (name, list, isLong) => {
           const num = (name.match(/(\d+)/) || [])[1];
           if (!num) return false;
-          return list.some((c) => c.includes(num));
+          const stems = isLong ? ['uzun_kapak_' + num, 'kapak_uzun_' + num] : ['kapak_' + num, 'short_kapak_' + num];
+          const exts = isLong ? ['png', 'jpg', 'jpeg'] : ['jpg', 'png', 'jpeg'];
+          return stems.some((st) => exts.some((e) => list.includes((st + '.' + e).toLowerCase())));
         };
         return (this.inv.shorts_videos || []).map((v) => ({
           name: v.name, type: 'short', num: (v.name.match(/(\d+)/) || [])[1], hasCover: check(v.name, covers, false), size: v.size

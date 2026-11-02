@@ -155,7 +155,7 @@
             ref: 'main',
             inputs: {
               tip: this.tip,
-              no: String(this.no),
+              numara: String(this.no),
               dosya: path,
               video_id: this.videoId || '',
               temizle: this.temizle ? 'true' : 'false'

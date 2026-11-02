@@ -132,6 +132,9 @@ h2 .soft{color:#95b7b6}
 .card-top{position:absolute;top:16px;left:16px;display:flex;align-items:center;gap:7px}
 .pill{display:inline-flex;align-items:center;min-height:25px;padding:0 9px;border:1px solid rgba(244,255,250,.23);border-radius:100px;background:rgba(3,16,19,.59);backdrop-filter:blur(10px);color:#eaf7f5;font-size:9px;letter-spacing:.1em;font-weight:700}
 .pill i{width:5px;height:5px;border-radius:50%;background:var(--gold);margin-right:6px}
+.pill-stat{gap:0;letter-spacing:.02em;font-weight:600;font-size:10px;white-space:nowrap}
+.pill-stat .heart{color:#ff6482;margin-right:3px;font-size:10px;line-height:1}
+.pill-stat .sep{opacity:.5;margin:0 5px}
 .card-bottom{position:absolute;left:18px;right:18px;bottom:18px}
 .card-index{color:var(--gold);font-size:9px;font-weight:700;letter-spacing:.15em;text-transform:uppercase}
 .card-bottom h3{font-family:var(--display);font-size:clamp(16px,1.5vw,20px);line-height:1.22;letter-spacing:-.03em;font-weight:600;margin:9px 0 16px;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
@@ -448,6 +451,13 @@ dialog::backdrop{background:rgba(0,8,12,.83);backdrop-filter:blur(10px)}
     if(v>=1000) return (v/1000).toFixed(1).replace('.',',')+' B izlenme';
     return v+' izlenme';
   };
+  const fmtShort=(n)=>{
+    const v=Math.round(Number(n)||0);
+    if(v<=0) return '';
+    if(v>=1000000) return (v/1000000).toFixed(1).replace('.',',')+' Mn';
+    if(v>=1000) return (v/1000).toFixed(1).replace('.',',')+' B';
+    return String(v);
+  };
   const moreCard=(label)=>{
     const a=document.createElement('a');
     a.className='video-card';
@@ -476,12 +486,19 @@ dialog::backdrop{background:rgba(0,8,12,.83);backdrop-filter:blur(10px)}
     const cards=items.map((m)=>{
       const card=makeCard(m.video_id,m.title||'');
       const top=card.querySelector('.card-top');
-      const views=fmtViews(m.views);
-      if(top&&views){
+      const views=fmtShort(m.views);
+      const likes=Math.round(Number(m.likes)||0);
+      if(top&&(views||likes>0)){
         const b=document.createElement('span');
-        b.className='pill';
+        b.className='pill pill-stat';
         b.style.marginLeft='auto';
-        b.textContent=views;
+        if(likes>0){
+          const h=document.createElement('span');h.className='heart';h.textContent='\u2764';h.setAttribute('aria-hidden','true');
+          b.append(h,document.createTextNode(String(likes)));
+        }
+        if(likes>0&&views){const sep=document.createElement('span');sep.className='sep';sep.textContent='\u00b7';b.append(sep);}
+        if(views)b.append(document.createTextNode(views+' izlenme'));
+        b.setAttribute('title',(likes>0?likes+' beğeni · ':'')+(Number(m.views)||0)+' izlenme');
         top.appendChild(b);
       }
       return card;
@@ -501,8 +518,8 @@ dialog::backdrop{background:rgba(0,8,12,.83);backdrop-filter:blur(10px)}
         const shorts=clean(data&&data.top_shorts);
         const longs=clean(data&&data.top_longs);
         if(!shorts.length&&!longs.length)throw Error('empty');
-        fillRail('top-shorts-rail','top-shorts-note',shorts,'Görüntülenmeye göre ilk 10 Shorts','Sıralama verisi henüz yok',"YouTube'da tüm Shorts");
-        fillRail('long-rail','long-note',longs,'En çok izlenen uzun videolar','Uzun videolar yakında',"YouTube'da tüm videolar");
+        fillRail('top-shorts-rail','top-shorts-note',shorts,'Beğeni + izlenmeye göre ilk 10 Shorts','Sıralama verisi henüz yok',"YouTube'da tüm Shorts");
+        fillRail('long-rail','long-note',longs,'Beğeni + izlenmeye göre uzun videolar','Uzun videolar yakında',"YouTube'da tüm videolar");
       })
       .catch(()=>{
         const a=document.getElementById('top-shorts-note');if(a)a.textContent='Kanalın öne çıkan Shorts videoları';

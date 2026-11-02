@@ -45,7 +45,7 @@
         const iv = b64ToBytes(entry.i);
         const baseKey = await subtle.importKey('raw', enc.encode(password), 'PBKDF2', false, ['deriveKey']);
         const key = await subtle.deriveKey(
-          { name: 'PBKDF2', salt, iterations: 100000, hash: 'SHA-256' },
+          { name: 'PBKDF2', salt, iterations: entry.it || 100000, hash: 'SHA-256' },
           baseKey,
           { name: 'AES-GCM', length: 256 },
           false,
@@ -259,6 +259,38 @@
     lastAutoRefresh: 0,
     tick: 0,
 
+    /* --- oturum güvenliği: 30 dk boşta kalınca kilitlen ---------------------- */
+    idleLimitMs: 30 * 60 * 1000,
+    idleTimer: null,
+    _idleTouch: null,
+    startIdleWatch() {
+      this.stopIdleWatch();
+      const reset = () => {
+        if (this.idleTimer) clearTimeout(this.idleTimer);
+        this.idleTimer = setTimeout(() => {
+          if (this.authed) {
+            this.logout();
+            this.notify('warning', '30 dakika işlem yapılmadı — güvenlik için oturum kapatıldı.');
+          }
+        }, this.idleLimitMs);
+      };
+      this._idleTouch = reset;
+      ['click', 'keydown', 'touchstart', 'scroll'].forEach((e) =>
+        document.addEventListener(e, reset, { passive: true })
+      );
+      reset();
+    },
+    stopIdleWatch() {
+      if (this.idleTimer) clearTimeout(this.idleTimer);
+      this.idleTimer = null;
+      if (this._idleTouch) {
+        ['click', 'keydown', 'touchstart', 'scroll'].forEach((e) =>
+          document.removeEventListener(e, this._idleTouch)
+        );
+        this._idleTouch = null;
+      }
+    },
+
     notify(type, message) {
       try {
         ElementPlus.ElMessage({ type, message, duration: type === 'error' ? 6000 : 3200, showClose: true, grouping: true });
@@ -278,6 +310,7 @@
         storage.setItem('bd_panel_token', token);
         this.authed = true;
         this.loginBusy = false;
+        this.startIdleWatch();
         await this.bootstrap();
         return true;
       } catch (e) {
@@ -298,6 +331,7 @@
     },
 
     logout() {
+      this.stopIdleWatch();
       sessionStorage.removeItem('bd_panel_token');
       localStorage.removeItem('bd_panel_token');
       this.token = '';

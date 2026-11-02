@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="robots" content="noindex, nofollow" />
+<title>Kasa Üret · Panel şifresi + PAT</title>
+<style>
+  :root { color-scheme: light; }
+  body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; margin: 0; padding: 18px;
+         background: #f6f8fb; color: #16202b; }
+  .wrap { max-width: 720px; margin: 0 auto; }
+  h1 { font-size: 19px; margin: 0 0 4px; }
+  p.lead { color: #5b6b7c; font-size: 13px; margin: 0 0 16px; line-height: 1.55; }
+  .card { background: #fff; border: 1px solid #e6ebf1; border-radius: 14px; padding: 14px; margin-bottom: 14px; }
+  label { display: block; font-size: 12px; color: #5b6b7c; margin: 10px 0 4px; }
+  input { width: 100%; box-sizing: border-box; padding: 10px 12px; border: 1px solid #d5dde6;
+          border-radius: 9px; font-size: 14px; background: #fbfcfe; }
+  button { margin-top: 12px; padding: 11px 16px; border: 0; border-radius: 9px; background: #2f6fbf;
+           color: #fff; font-size: 14px; font-weight: 600; }
+  button.ghost { background: #eef3f9; color: #2f6fbf; }
+  textarea { width: 100%; box-sizing: border-box; min-height: 130px; font-family: ui-monospace, monospace;
+             font-size: 11.5px; padding: 10px; border: 1px solid #d5dde6; border-radius: 9px; background: #0f1720;
+             color: #d6e3f0; }
+  .ok { color: #1f8a4c; } .warn { color: #b5730c; } .bad { color: #c0392b; }
+  .msg { font-size: 12.5px; margin-top: 8px; line-height: 1.5; }
+  .steps { font-size: 12.5px; color: #5b6b7c; line-height: 1.7; padding-left: 18px; margin: 8px 0 0; }
+  code { background: #eef3f9; padding: 1px 5px; border-radius: 5px; font-size: 12px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Kasa Üret</h1>
+  <p class="lead">
+    Bu sayfa <b>her şeyi tarayıcında</b> yapar: hiçbir veri hiçbir yere gitmez (istek yok).
+    Çıktı, panelin <code>js/api.js</code> içindeki <code>VAULT</code> dizisine yapıştırılacak şifreli bloktur.
+    Eski kasada 100.000 iterasyon vardı; bu araç <b>1.000.000</b> ile üretir.
+  </p>
+
+  <div class="card">
+    <label>Yeni panel şifresi (en az 12 karakter, 3+ kelime önerilir)</label>
+    <input id="pw1" type="password" autocomplete="new-password" placeholder="ör. mavi-kitap-42-limandaydi" />
+    <label>Şifre (tekrar)</label>
+    <input id="pw2" type="password" autocomplete="new-password" />
+    <label>GitHub PAT (fine-grained, sadece bu repo)</label>
+    <input id="pat" type="password" autocomplete="off" placeholder="github_pat_..." />
+    <label>PBKDF2 iterasyon</label>
+    <input id="it" type="number" value="1000000" min="100000" step="100000" />
+    <button id="go">Kasa bloğunu üret</button>
+    <div id="msg" class="msg"></div>
+  </div>
+
+  <div class="card" id="outCard" style="display:none">
+    <label>js/api.js içindeki VAULT dizisini bununla değiştir</label>
+    <textarea id="out" readonly></textarea>
+    <button class="ghost" id="copy">Kopyala</button>
+    <div class="msg" id="copyMsg"></div>
+    <ol class="steps">
+      <li>Kopyala → GitHub'da <code>benngokhan.github.io/admin/js/api.js</code> dosyasını aç → <code>const VAULT = [ ... ];</code> bloğunu bununla değiştir → commit.</li>
+      <li>Panelde yeni şifreyle giriş yap.</li>
+      <li>Eski PAT'ı GitHub → Settings → Developer settings → Tokens bölümünden <b>iptal et</b>.</li>
+    </ol>
+  </div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+  const enc = new TextEncoder();
+  const b64 = (buf) => btoa(String.fromCharCode.apply(null, new Uint8Array(buf)));
+
+  function strength(pw) {
+    let p = 0;
+    if (pw.length >= 12) p += 2; else if (pw.length >= 8) p += 1;
+    if (/\d/.test(pw)) p += 1;
+    if (/[^a-zA-Z0-9]/.test(pw)) p += 1;
+    if (pw.length >= 20) p += 1;
+    if (/^(kartal|bilgidozu|gokhan|admin|panel|sifre|password|1234)/i.test(pw)) p -= 2;
+    return p; // <=0 kötü, 1-2 orta, 3+ iyi
+  }
+
+  async function build() {
+    const m = document.getElementById('msg');
+    const pw1 = document.getElementById('pw1').value.trim();
+    const pw2 = document.getElementById('pw2').value.trim();
+    const pat = document.getElementById('pat').value.trim();
+    const it = Math.max(100000, parseInt(document.getElementById('it').value || '1000000', 10));
+    m.className = 'msg';
+    m.textContent = '';
+
+    if (!pat || pat.length < 20) { m.className = 'msg bad'; m.textContent = 'PAT geçersiz görünüyor.'; return; }
+    if (pw1.length < 12) { m.className = 'msg bad'; m.textContent = 'Şifre en az 12 karakter olmalı.'; return; }
+    if (pw1 !== pw2) { m.className = 'msg bad'; m.textContent = 'Şifreler aynı değil.'; return; }
+    const st = strength(pw1);
+    if (st <= 1) { m.className = 'msg warn'; m.textContent = 'Şifre zayıf (tahmin edilebilir). Yine de üretmek için tekrar bas.'; }
+
+    const salt = crypto.getRandomValues(new Uint8Array(16));
+    const iv = crypto.getRandomValues(new Uint8Array(12));
+    const baseKey = await crypto.subtle.importKey('raw', enc.encode(pw1), 'PBKDF2', false, ['deriveKey']);
+    const key = await crypto.subtle.deriveKey(
+      { name: 'PBKDF2', salt, iterations: it, hash: 'SHA-256' },
+      baseKey, { name: 'AES-GCM', length: 256 }, false, ['encrypt']
+    );
+    const ct = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, enc.encode(pat));
+
+    const snippet = 'const VAULT = [\n  { s: \'' + b64(salt) + '\', i: \'' + b64(iv) +
+      '\', it: ' + it + ', c: \'' + b64(ct) + '\' }\n];';
+    document.getElementById('out').value = snippet;
+    document.getElementById('outCard').style.display = '';
+    m.className = 'msg ok';
+    m.textContent = 'Kasa üretildi. Iterasyon: ' + it.toLocaleString('tr-TR') + ' · şifre gücü: ' +
+      (st >= 3 ? 'iyi' : st >= 1 ? 'orta' : 'zayıf');
+  }
+
+  document.getElementById('go').addEventListener('click', build);
+  document.getElementById('copy').addEventListener('click', async () => {
+    try {
+      await navigator.clipboard.writeText(document.getElementById('out').value);
+      document.getElementById('copyMsg').textContent = 'Kopyalandı.';
+    } catch (e) {
+      document.getElementById('out').select();
+      document.getElementById('copyMsg').textContent = 'Kopyalanamadı — metni elle seç.';
+    }
+  });
+})();
+</script>
+</body>
+</html>

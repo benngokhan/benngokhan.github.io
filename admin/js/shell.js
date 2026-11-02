@@ -50,7 +50,7 @@
   const LoginView = {
     name: 'LoginView',
     data() {
-      return { password: '', remember: true, showPass: false };
+      return { password: '', remember: false, showPass: false };
     },
     computed: {
       s() { return store; }

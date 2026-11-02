@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#07131a">
+<title>PWA kurulum teşhisi — Bilgi Dozu</title>
+<link rel="manifest" href="./manifest.webmanifest">
+<style>
+  :root{
+    --ink:#061218; --panel:#0e1e25; --line:rgba(196,223,224,.15);
+    --aqua:#9debe7; --gold:#f6cc7a; --ok:#55d98a; --bad:#ff6b7f; --muted:#9caeb3;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:radial-gradient(ellipse at 20% -10%,rgba(21,81,84,.35),transparent 55%),var(--ink);color:#eaf7f5;
+       font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;line-height:1.55;padding:26px 18px 60px}
+  .wrap{max-width:760px;margin:0 auto}
+  h1{font-size:22px;margin:0 0 6px;letter-spacing:-.02em}
+  .sub{color:var(--muted);font-size:13px;margin:0 0 22px}
+  .verdict{border-radius:16px;padding:18px 20px;margin-bottom:18px;border:1px solid var(--line);background:var(--panel)}
+  .verdict.ok{border-color:rgba(85,217,138,.45);background:rgba(85,217,138,.08)}
+  .verdict.bad{border-color:rgba(255,107,127,.45);background:rgba(255,107,127,.08)}
+  .verdict h2{margin:0 0 6px;font-size:16px}
+  .verdict p{margin:0;font-size:13px;color:#cfe3e1}
+  ul.checks{list-style:none;margin:0;padding:0}
+  ul.checks li{display:flex;gap:11px;align-items:flex-start;padding:11px 0;border-bottom:1px solid rgba(196,223,224,.09);font-size:14px}
+  ul.checks li:last-child{border-bottom:0}
+  .dot{flex:0 0 auto;width:9px;height:9px;border-radius:50%;margin-top:7px;background:var(--muted)}
+  .dot.ok{background:var(--ok);box-shadow:0 0 10px rgba(85,217,138,.6)}
+  .dot.bad{background:var(--bad);box-shadow:0 0 10px rgba(255,107,127,.55)}
+  .dot.wait{background:var(--gold)}
+  .lbl{flex:1;min-width:0}
+  .val{display:block;color:var(--muted);font-size:12px;margin-top:3px;word-break:break-word}
+  code{background:rgba(157,235,231,.1);padding:1px 6px;border-radius:5px;font-size:12px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:6px 20px;margin-bottom:18px}
+  h3{font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--gold);margin:20px 0 6px}
+  textarea{width:100%;min-height:190px;background:#08161c;color:#d7eae8;border:1px solid var(--line);border-radius:12px;
+           padding:14px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;line-height:1.6}
+  button{appearance:none;border:0;border-radius:12px;padding:13px 20px;font-size:14px;font-weight:600;cursor:pointer;
+         background:var(--aqua);color:#082027;margin:12px 8px 0 0}
+  button.ghost{background:transparent;color:#d6edeb;border:1px solid var(--line)}
+  .hint{font-size:12px;color:var(--muted);margin-top:14px}
+  a{color:var(--aqua)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>PWA kurulum teşhisi</h1>
+  <p class="sub">Chrome “Bu uygulama yüklenemez” dediğinde hangi koşulun eksik olduğunu gösterir.</p>
+
+  <div class="verdict" id="verdict">
+    <h2 id="verdict-title">Kontrol ediliyor…</h2>
+    <p id="verdict-text">Manifest, ikonlar ve service worker sınanıyor.</p>
+  </div>
+
+  <div class="card">
+    <h3>Kurulum koşulları</h3>
+    <ul class="checks" id="checks">
+      <li><span class="dot wait" id="d-manifest"></span><span class="lbl">Manifest bağlantısı<span class="val" id="v-manifest">…</span></span></li>
+      <li><span class="dot wait" id="d-json"></span><span class="lbl">Manifest okunabiliyor<span class="val" id="v-json">…</span></span></li>
+      <li><span class="dot wait" id="d-icons"></span><span class="lbl">192px ve 512px ikonlar<span class="val" id="v-icons">…</span></span></li>
+      <li><span class="dot wait" id="d-start"></span><span class="lbl">start_url aynı kökende<span class="val" id="v-start">…</span></span></li>
+      <li><span class="dot wait" id="d-display"></span><span class="lbl">display: standalone<span class="val" id="v-display">…</span></span></li>
+      <li><span class="dot wait" id="d-sw"></span><span class="lbl">Service worker aktif ve sayfayı kontrol ediyor<span class="val" id="v-sw">…</span></span></li>
+      <li><span class="dot wait" id="d-prompt"></span><span class="lbl">Kurulum istemi (beforeinstallprompt) tetiklendi<span class="val" id="v-prompt">…</span></span></li>
+      <li><span class="dot wait" id="d-mode"></span><span class="lbl">Şu anki görünüm modu<span class="val" id="v-mode">…</span></span></li>
+    </ul>
+  </div>
+
+  <h3>Teşhis raporu</h3>
+  <textarea id="report" readonly>hazırlanıyor…</textarea>
+  <button id="copy">Raporu kopyala</button>
+  <button class="ghost" id="reload">Sayfayı sert yenile</button>
+  <p class="hint">
+    Not: <code>beforeinstallprompt</code> boş görünüyorsa Chrome siteyi kurulabilir saymıyor.
+    Bu sayfa da aynı manifesti kullandığı için sonucu doğrudan gösterir.
+  </p>
+</div>
+
+<script>
+(function () {
+  const state = { promptFired: false, promptPlatform: '' };
+  window.addEventListener('beforeinstallprompt', (e) => {
+    state.promptFired = true;
+    state.promptPlatform = e.platforms ? e.platforms.join(',') : '';
+    e.preventDefault();               // otomatik istemi engelle, sadece işaretle
+    window.__installEvent = e;
+  });
+  window.addEventListener('appinstalled', () => { state.installed = true; });
+
+  const set = (id, ok, text, tone) => {
+    const dot = document.getElementById('d-' + id);
+    dot.className = 'dot ' + (tone || (ok ? 'ok' : 'bad'));
+    document.getElementById('v-' + id).innerHTML = text;
+  };
+
+  async function iconCheck(url) {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => resolve({ url, ok: true, w: img.naturalWidth, h: img.naturalHeight });
+      img.onerror = () => resolve({ url, ok: false, w: 0, h: 0 });
+      img.src = url;
+    });
+  }
+
+  async function run() {
+    const lines = [];
+    const ua = navigator.userAgent;
+    const standalone = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+
+    // 1) manifest etiketi
+    const link = document.querySelector('link[rel="manifest"]');
+    set('manifest', !!link, link ? link.href : 'Sayfada <code>rel=manifest</code> yok');
+    lines.push('manifest link: ' + (link ? link.href : 'YOK'));
+
+    let man = null, manStatus = '-';
+    if (link) {
+      try {
+        const res = await fetch(link.href, { cache: 'no-store' });
+        manStatus = res.status + ' / ' + (res.headers.get('content-type') || '-');
+        man = await res.json();
+      } catch (e) { manStatus = 'HATA: ' + e.message; }
+    }
+    set('json', !!man, manStatus + (man && man.name ? ' · ' + man.name : ''));
+    lines.push('manifest fetch: ' + manStatus);
+
+    // 2) ikonlar
+    const icons = (man && man.icons) || [];
+    const has192 = icons.some((i) => /192/.test(i.sizes || ''));
+    const has512 = icons.some((i) => /512/.test(i.sizes || ''));
+    const results = await Promise.all(icons.map((i) => iconCheck(new URL(i.src, link ? link.href : location.href).href)));
+    const broken = results.filter((r) => !r.ok);
+    set('icons', has192 && has512 && !broken.length,
+        '192: ' + (has192 ? 'var' : 'YOK') + ' · 512: ' + (has512 ? 'var' : 'YOK') +
+        ' · yüklenen: ' + (results.length - broken.length) + '/' + results.length +
+        (broken.length ? ' · kırık: ' + broken.map((b) => b.url.split('/').pop()).join(', ') : ''));
+    lines.push('icons: ' + icons.map((i) => i.sizes + ':' + i.purpose).join(' | ') + ' | broken=' + broken.length);
+
+    // 3) start_url & display
+    let startOk = false, displayOk = false;
+    if (man) {
+      try {
+        const startUrl = new URL(man.start_url || './', link.href);
+        const scope = new URL(man.scope || './', link.href);
+        startOk = startUrl.origin === location.origin && startUrl.pathname.startsWith(scope.pathname);
+        set('start', startOk, startUrl.href + ' · scope ' + scope.pathname);
+        lines.push('start_url: ' + startUrl.href + ' · scope: ' + scope.pathname);
+      } catch (e) { set('start', false, 'geçersiz start_url'); }
+      displayOk = man.display === 'standalone' || (man.display_override || []).includes('standalone');
+      set('display', displayOk, 'display: ' + man.display + ' · override: ' + (man.display_override || []).join(', '));
+      lines.push('display: ' + man.display);
+    } else {
+      set('start', false, 'manifest yok'); set('display', false, 'manifest yok');
+    }
+
+    // 4) service worker
+    let swTxt = 'serviceWorker API yok', swOk = false;
+    if ('serviceWorker' in navigator) {
+      try {
+        const reg = await navigator.serviceWorker.getRegistration();
+        if (!reg) { swTxt = 'kayıt yok'; }
+        else {
+          const active = !!reg.active;
+          const ctrl = !!navigator.serviceWorker.controller;
+          swOk = active && ctrl;
+          swTxt = 'scope ' + reg.scope + ' · aktif: ' + (active ? 'evet' : 'hayır') + ' · sayfayı kontrol: ' + (ctrl ? 'evet' : 'hayır');
+        }
+      } catch (e) { swTxt = 'hata: ' + e.message; }
+    }
+    set('sw', swOk, swTxt);
+    lines.push('service worker: ' + swTxt);
+
+    // 5) install prompt (kısa bekleme)
+    await new Promise((r) => setTimeout(r, 1200));
+    set('prompt', state.promptFired, state.promptFired ? 'evet · platform: ' + (state.promptPlatform || '-') : 'HAYIR — Chrome siteyi kurulabilir görmüyor');
+    lines.push('beforeinstallprompt: ' + state.promptFired);
+
+    // 6) mod
+    set('mode', standalone, (standalone ? 'standalone (kurulu gibi)' : 'browser (sekme)'));
+    lines.push('display-mode standalone: ' + standalone);
+
+    // verdict
+    const critical = !!man && has192 && has512 && !broken.length && startOk && displayOk;
+    const vd = document.getElementById('verdict');
+    const ok = critical && state.promptFired;
+    vd.className = 'verdict ' + (ok ? 'ok' : 'bad');
+    document.getElementById('verdict-title').textContent = ok
+      ? 'Kurulabilir — Chrome kurulum istemini tetikledi'
+      : critical
+        ? 'Manifest tamam ama Chrome istemi tetiklemedi'
+        : 'Eksik koşul var — aşağıdaki kırmızı satırlara bak';
+    document.getElementById('verdict-text').textContent = ok
+      ? 'Menüde “Yükle” artık etkin olmalı. Kısayol değil, uygulama olarak kurulur.'
+      : 'Bu sayfa aynı manifesti kullanıyor; kırmızı satır hangi koşulun eksik olduğunu söyler.';
+
+    lines.unshift(
+      'UA: ' + ua,
+      'URL: ' + location.href,
+      'viewport: ' + window.innerWidth + 'x' + window.innerHeight + ' dpr ' + (window.devicePixelRatio || 1),
+      'zaman: ' + new Date().toISOString(),
+      '---'
+    );
+    document.getElementById('report').value = lines.join('\n') + '\n---\nsonuç: ' + (ok ? 'KURULABILIR' : critical ? 'MANIFEST_OK_ISTEM_YOK' : 'EKSIK_KOSUL');
+  }
+
+  document.getElementById('copy').addEventListener('click', async () => {
+    const ta = document.getElementById('report');
+    try { await navigator.clipboard.writeText(ta.value); document.getElementById('copy').textContent = 'Kopyalandı ✓'; }
+    catch (e) { ta.select(); document.execCommand('copy'); }
+  });
+  document.getElementById('reload').addEventListener('click', () => location.reload(true));
+
+  run();
+})();
+</script>
+</body>
+</html>

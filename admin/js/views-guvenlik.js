@@ -8,6 +8,7 @@
   'use strict';
 
   const VIEWS = window.VIEWS;
+  const { store } = window.BD;
   if (!VIEWS) return;
 
   const SAYFA_DEPO = 'benngokhan.github.io';

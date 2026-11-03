@@ -39,6 +39,7 @@
     },
     {
       title: 'Sistem', icon: 'Setting', children: [
+        { key: 'guvenlik', title: 'Güvenlik & Şifre', icon: 'Lock' },
         { key: 'scheduler', title: 'Zamanlayıcı & Cron', icon: 'Timer' },
         { key: 'system', title: 'Sistem Durumu', icon: 'InfoFilled' }
       ]

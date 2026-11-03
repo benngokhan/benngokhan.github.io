@@ -10,6 +10,7 @@
     {
       title: 'Operasyon', icon: 'Monitor', children: [
         { key: 'dashboard', title: 'Kontrol Paneli', icon: 'Odometer' },
+        { key: 'uretim', title: 'Video Üretimi', icon: 'MagicStick' },
         { key: 'runs', title: 'Çalıştırmalar', icon: 'VideoPlay' },
         { key: 'workflows', title: 'İş Akışları', icon: 'Promotion' }
       ]

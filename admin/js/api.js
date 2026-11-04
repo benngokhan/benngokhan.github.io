@@ -23,9 +23,7 @@
 
   /* --- Şifre kasası: PAT, AES-256-GCM + PBKDF2(100k) ile sarılıdır --------- */
   const VAULT = [
-    { s: 'vLZYoQ0Nyg0RRTsYkry7JQ==', i: 'yJlMo8duERFAwlcB', c: 'jaZJ7mPxp0QnQJYgePbQaF9YkBdIrdM7X+RWZzs6CkyJrFXw6crU11ydD9K/MwHNyuvq/UIsdhE=' },
-    { s: '0t1bE/eNWBc9dhslpwMHqA==', i: 'WoKzzj9ENtUU7r6i', c: 'RmHSqMKpeEIP3Q0cnFaTGZAkBFtmmrMC9H6ytzhmuGYoHPtZGQbIdlgQSZiKCmM/DVGbNrcuv/U=' },
-    { s: '0dxPLp6qy1rJdhlpcdF7kg==', i: 'ahw2P0Eyu0oHjR9l', c: 'kHbqa+GZSQmZ15itplA1IPinyDag+oZ4jBjY8U5RvShRZXbslJSp0B6gygUh3QDgKYfmTn88Rtk=' }
+    { s: 'RFatP/UrFXquvxWwpcru1w==', i: 'CiZCi22yGqyKhuZh', c: 'UmCYqc1ULfBfFDcqM43jw/97V0bv2n0k81JOD3Xkkb80Kwqnggf3rayMjsj/CA88DsgorzcNfak=' }
   ];
 
   const b64ToBytes = (b64) => {

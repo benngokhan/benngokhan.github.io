@@ -23,7 +23,9 @@
 
   /* --- Şifre kasası: PAT, AES-256-GCM + PBKDF2(100k) ile sarılıdır --------- */
   const VAULT = [
-    { s: 'RFatP/UrFXquvxWwpcru1w==', i: 'CiZCi22yGqyKhuZh', c: 'UmCYqc1ULfBfFDcqM43jw/97V0bv2n0k81JOD3Xkkb80Kwqnggf3rayMjsj/CA88DsgorzcNfak=' }
+    { s: 'slqUfK6K/Tc/yqnXOVCsmQ==', i: 'ttxWDrdbB5ug+hP6', c: '1nh47Pzm7GRQ2FcNsnMSQnYnAEBUIVh0cdJisG5/a+Lzs9hyrSPJTo4sbL/ye2N/m3WTypo9waWLARvSJjM9xeiNqqsn1bdtDwViZZ6mHOUXiAv6ciKVeW43q63HpzYCcGUNuKHVEtjZ9K7Lng==' },
+    { s: '7pKGiBDlMhncgYTa8a2bow==', i: 'pA4rXP1+JUkLCR2L', c: 'ut2s0zBu5SUOkdTH2JjI//+pph63+5lydt3T4O/vXz9pESTTk1RyxwttnjgU+kiyXs1nIW9RkNDKBsesuEAL3oPHqrTWQnT8pkb+vxemGmUNekfSfRPxEJ95lTV9Tshg48B8TbMZ652eRvnasg==' },
+    { s: 'dysQ7si6x0Ywt287la0WlQ==', i: 'Uy67dA0zO86t1TKU', c: 'Tm7JHXa40EcuygB6QwiPvCgYDrnNXRgXZ/nf4ySTDxjsDKRVMYTlkIF2ffNb/qmxBz+HW/SeuG13ER/AGDlzIDrrE7c6JtJDq5HUUoUTArPftfCS95L5RbNicjpDwtdod9uodNIUbJmhx0Ux/g==' }
   ];
 
   const b64ToBytes = (b64) => {
@@ -312,7 +314,9 @@
         await this.bootstrap();
         return true;
       } catch (e) {
-        this.loginError = e.message || String(e);
+        this.loginError = (e && String(e.message || e).toLowerCase().includes('bad credentials'))
+          ? 'Panel şifresi doğru; kayıtlı GitHub PAT geçersiz veya iptal edilmiş.'
+          : (e.message || String(e));
         this.token = '';
         this.authed = false;
         this.loginBusy = false;

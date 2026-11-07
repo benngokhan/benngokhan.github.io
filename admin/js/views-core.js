@@ -52,6 +52,9 @@
       retention() { return this.telemetry.retention || { metrics: [] }; },
       workers() { return this.telemetry.isciler || []; },
       alerts() { return this.telemetry.uyarilar || []; },
+      apiUyarilari() { return this.s.apiUyarilari || []; },
+      apiKritikSayisi() { return this.apiUyarilari.filter(u => u.seviye === 'kritik').length; },
+      apiUyariVar() { return this.apiUyarilari.length > 0; },
       queue() { return this.telemetry.active_queue || []; },
       stale() {
         if (!this.telemetry.generated_at_iso) return true;
@@ -126,6 +129,8 @@
       }
     },
     methods: {
+      apiSayfasinaGit() { location.hash = '#/api'; },
+
       go(k) { location.hash = '#/' + k; },
       async triggerUploader() {
         try {
@@ -238,6 +243,20 @@
             <el-button size="small" icon="Refresh" :loading="s.telemetryBusy" @click="s.loadTelemetry()">Telemetriyi yenile</el-button>
             <el-button size="small" icon="Timer" @click="triggerTelemetry">Döngüyü çalıştır</el-button>
             <el-button size="small" type="primary" icon="Upload" :loading="s.booting" @click="triggerUploader">Video yüklemeyi tetikle</el-button>
+          </div>
+        </div>
+
+        <!-- API uyarıları: %90+ doluluk veya geçersiz anahtar. Sadece sorun varsa görünür. -->
+        <div v-if="apiUyariVar" class="api-uyari-strip">
+          <div class="au-bas">
+            <el-icon class="au-ikon"><WarningFilled /></el-icon>
+            <strong>{{ apiKritikSayisi ? apiKritikSayisi + ' kritik API uyarısı' : apiUyarilari.length + ' API uyarısı' }}</strong>
+            <span class="au-link" @click="apiSayfasinaGit">API &amp; Kota →</span>
+          </div>
+          <div v-for="u in apiUyarilari" :key="u.id" class="au-satir">
+            <span class="au-servis">{{ u.servis }}</span>
+            <span class="au-mesaj">{{ u.mesaj }}</span>
+            <span v-if="u.islem" class="au-islem">→ {{ u.islem }}</span>
           </div>
         </div>
 

@@ -18,6 +18,7 @@
     slotClaimsPath: 'slot_claims.txt',
     uploadedPath: 'uploaded.txt',
     statusPath: 'status_report.json',
+    uyariPath: 'api_uyarilari.json',
     workflowsDir: '.github/workflows'
   };
 
@@ -226,6 +227,10 @@
     telemetryLoadedAt: 0,
     telemetryBusy: false,
 
+    apiUyarilari: [],
+    apiUyariOzet: {},
+    apiUyariBusy: false,
+
     workflows: [],
     workflowsLoadedAt: 0,
     runs: [],
@@ -397,7 +402,7 @@
       this.booting = true;
       this.lastError = '';
       try {
-        await Promise.allSettled([this.loadTelemetry(), this.loadWorkflows(), this.loadRuns(), this.loadFiles()]);
+        await Promise.allSettled([this.loadTelemetry(), this.loadWorkflows(), this.loadRuns(), this.loadFiles(), this.loadApiUyarilari()]);
       } finally {
         this.booting = false;
         this.lastAutoRefresh = Date.now();
@@ -676,6 +681,21 @@
       return this.commitText(path, text, message, sha);
     },
 
+    async loadApiUyarilari(silent) {
+      this.apiUyariBusy = true;
+      try {
+        const txt = await this.getRawText(CFG.uyariPath);
+        if (!txt) { this.apiUyarilari = []; this.apiUyariOzet = {}; return; }
+        const d = JSON.parse(txt);
+        this.apiUyarilari = d.uyarilar || [];
+        this.apiUyariOzet = d.ozet || {};
+      } catch (e) {
+        if (!silent) { this.apiUyarilari = []; this.apiUyariOzet = {}; }
+      } finally {
+        this.apiUyariBusy = false;
+      }
+    },
+
     async loadFiles() {
       this.filesBusy = true;
       const get = async (p) => {
@@ -894,7 +914,7 @@
     async autoRefresh() {
       if (!this.authed) return;
       try {
-        await Promise.allSettled([this.loadRuns(), this.loadTelemetry(true)]);
+        await Promise.allSettled([this.loadRuns(), this.loadTelemetry(true), this.loadApiUyarilari(true)]);
         this.lastAutoRefresh = Date.now();
         if (this.selectedRun && this.runDetailOpen) await this.refreshSelectedRun();
       } catch (e) { /* sessiz */ }

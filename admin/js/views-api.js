@@ -137,14 +137,37 @@
         this.kaydetBusy = true;
         try {
           await this.s.repoDispatch('api_anahtar', { secret_adi: this.secretAdi, deger: deger });
-          this.s.notify('success', this.secretAdi + ' gönderildi — secret yazılıyor, kota okunuyor.');
+          this.s.notify('info', this.secretAdi + ' gönderildi — GitHub\'ın gerçekten yazıp yazmadığı kontrol ediliyor…');
           this.secretDeger = '';
+          const sonuc = await this.sonucBekle(90);
+          if (sonuc && sonuc.ok === true) {
+            this.s.notify('success', '✓ ' + this.secretAdi + ' GitHub\'a YAZILDI.');
+          } else {
+            this.s.notify('error',
+              'GitHub REDDETTİ: ' + ((sonuc && sonuc.mesaj) || 'sonuç alınamadı') +
+              ' — Settings → Secrets → Actions üzerinden elle ekle.');
+          }
           this.bekle();
         } catch (e) {
           this.s.notify('error', 'Gönderilemedi: ' + (e.message || e));
         } finally {
           this.kaydetBusy = false;
         }
+      },
+
+      // api_secret_sonuc.json: GitHub gerçekten yazdı mı?
+      async sonucBekle(saniye) {
+        const bitis = Date.now() + saniye * 1000;
+        while (Date.now() < bitis) {
+          await new Promise((r) => setTimeout(r, 7000));
+          try {
+            const txt = await this.s.getRawText('api_secret_sonuc.json');
+            if (!txt) continue;
+            const d = JSON.parse(txt);
+            if (d && d.secret_adi === this.secretAdi) return d;
+          } catch (e) { /* devam */ }
+        }
+        return null;
       }
     },
     mounted() { this.yukle(); },

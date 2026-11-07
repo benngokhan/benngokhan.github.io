@@ -311,7 +311,12 @@
         this.authed = true;
         this.loginBusy = false;
         this.startIdleWatch();
-        await this.bootstrap();
+        // Girişi telemetri yüklemesine bağlama: panel hemen açılsın,
+        // canlı veriler arka planda yüklensin.
+        this.bootstrap().catch((e) => {
+          this.lastError = e.message || String(e);
+          this.notify('error', 'Canlı veriler yüklenemedi: ' + this.lastError);
+        });
         return true;
       } catch (e) {
         this.loginError = (e && String(e.message || e).toLowerCase().includes('bad credentials'))

@@ -63,7 +63,9 @@
         const ok = await store.login(this.password, this.remember);
         if (ok) {
           this.password = '';
+          store.view = 'dashboard';
           location.hash = '#/dashboard';
+          syncRoute();
         }
       }
     },

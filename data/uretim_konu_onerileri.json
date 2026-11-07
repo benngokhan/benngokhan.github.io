@@ -1,0 +1,11 @@
+{
+  "generated_at": "2026-11-08T01:00:00+03:00",
+  "method": "Kanalın yüksek performanslı merak sorusu yapısı + kullanılmamış konu kontrolü + güçlü görsel potansiyeli",
+  "suggestions": [
+    {"title":"Bir şimşek aynı yere gerçekten iki kez düşer mi?","score":96,"reason":"Yaygın inanışa ters köşe; güçlü görüntü ve net bilimsel cevap"},
+    {"title":"Köpekbalıkları neden hiç kemik taşımadan yaşayabilir?","score":94,"reason":"Şaşırtıcı hayvan anatomisi; yüksek merak ve güçlü yakın plan görsel"},
+    {"title":"Penguenlerin ayakları buzun üzerinde neden donmaz?","score":93,"reason":"Gündelik soru + görünmeyen biyolojik mekanizma"},
+    {"title":"Gökyüzü mor ışığı daha çok saçarken neden mavi görünür?","score":91,"reason":"Herkesin gördüğü fakat az kişinin bildiği fizik sorusu"},
+    {"title":"Bir denizaltı kilometrelerce derinde neden ezilmez?","score":90,"reason":"Tehlike, mühendislik ve basınç teması; güçlü izlenme potansiyeli"}
+  ]
+}

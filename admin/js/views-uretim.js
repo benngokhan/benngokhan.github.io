@@ -36,7 +36,7 @@
       return {
         s: store,
         konu: '',
-        sahne: 6,
+        sahne: 4,
         sureTipi: '38-42',
         sureMin: 38,
         sureMax: 42,
@@ -52,6 +52,7 @@
         sonYenileme: '',
         zamanlayici: null,
         oneriler: ONERILER,
+        oneriMeta: '',
         driveLink: DRIVE_ONAY
       };
     },
@@ -83,7 +84,15 @@
         if (tip === '38-42') { this.sureMin = 38; this.sureMax = 42; }
         if (tip === '50-58') { this.sureMin = 50; this.sureMax = 58; }
       },
-      oneriSec(t) { this.konu = t; },
+      oneriSec(t) { this.konu = typeof t === 'string' ? t : t.title; },
+      async onerileriYukle() {
+        try {
+          const r = await fetch('../../data/uretim_konu_onerileri.json?v=' + Date.now(), { cache: 'no-store' });
+          const j = await r.json();
+          this.oneriler = (j.suggestions || []).map(x => x.title);
+          this.oneriMeta = j.method || 'Analizli öneriler';
+        } catch (e) { this.oneriMeta = 'Yedek öneriler'; }
+      },
       durumEtiketi(k) {
         if (k.status === 'in_progress') return 'Üretiliyor';
         if (k.status === 'queued') return 'Sırada';
@@ -180,6 +189,7 @@
     },
     mounted() {
       this.ayarlariYukle();
+      this.onerileriYukle();
       this.yukle();
       this.zamanlayici = setInterval(() => this.yukle(true), 10000);
     },
@@ -205,6 +215,7 @@
                 <el-form-item label="Konu (tek cümle)">
                   <el-input v-model="konu" type="textarea" :rows="2" maxlength="160" show-word-limit
                     placeholder="Örnek: Parmak uçların suda neden buruşur?" />
+                  <div style="margin-top:8px;font-size:12px;color:#67c23a" v-if="oneriMeta">● {{ oneriMeta }}</div>
                   <div style="margin-top:8px">
                     <el-button v-for="o in oneriler" :key="o" size="small" plain
                       style="margin:0 6px 6px 0" @click="oneriSec(o)">{{ o }}</el-button>

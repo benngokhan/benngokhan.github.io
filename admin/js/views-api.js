@@ -48,20 +48,46 @@
       durumRenk(s) {
         return ({ ok: '#67c23a', yok: '#909399', gecersiz: '#f56c6c', hata: '#e6a23c' })[s] || '#909399';
       },
+      // DOLULUK yüzdesi: 0 = boş, 100 = kota bitti. Bar bu yüzdeyi gösterir.
       yuzde(s) {
-        if (s.kalan === null || s.kalan === undefined || !s.limit) return null;
-        return Math.max(0, Math.min(100, (s.kalan / s.limit) * 100));
+        const l = s.limit;
+        if (!l) return null;
+        const k = s.kullanilan;
+        if (k !== null && k !== undefined) {
+          return Math.max(0, Math.min(100, (k / l) * 100));
+        }
+        if (s.kalan === null || s.kalan === undefined) return null;
+        return Math.max(0, Math.min(100, ((l - s.kalan) / l) * 100));
+      },
+      // Barın rengi: %90 ve üstü KIRMIZI (sahibin kuralı)
+      kullanimRenk(p) {
+        if (p === null) return '#c0c4cc';
+        if (p >= 90) return '#f56c6c';
+        if (p >= 75) return '#e6a23c';
+        return '#67c23a';
+      },
+      // 'kalan / limit' metni — her kartta anlık
+      kalanMetin(s) {
+        if (s.ad === 'Google Drive') return this.boyut(s.kalan) + ' / ' + this.boyut(s.limit);
+        if (s.ad === 'GitHub' && s.actions_dakika !== undefined) {
+          return this.sayi(s.actions_kalan) + ' / ' + s.actions_limit + ' dk · Actions';
+        }
+        if (s.kalan === null || s.kalan === undefined) return '—';
+        return this.sayi(s.kalan) + (s.limit ? ' / ' + this.sayi(s.limit) : '') + (s.birim ? ' · ' + s.birim : '');
+      },
+      // 'bugün X kullanıldı' alt satırı
+      kullanimMetin(s) {
+        const p = this.yuzde(s);
+        if (p === null) return '';
+        if (!s.kullanilan && !s.kalan) return '';
+        const kul = s.kullanilan !== null && s.kullanilan !== undefined ? s.kullanilan : (s.limit - s.kalan);
+        return 'kullanılan ' + this.sayi(kul) + ' · %' + p.toFixed(1);
       },
       kirilimYuzde(s, k) {
         const toplam = s.kullanilan || (s.kirilim || []).reduce((a, x) => a + (x.boyut || 0), 0) || 1;
         return Math.max(0.5, (k.boyut || 0) / toplam * 100);
       },
-      barRenk(p) {
-        if (p === null) return '#909399';
-        if (p <= 10) return '#f56c6c';
-        if (p <= 30) return '#e6a23c';
-        return '#67c23a';
-      },
+      barRenk(p) { return this.kullanimRenk(p); },
       deger(s) {
         const k = s.kalan;
         const l = s.limit;
@@ -189,6 +215,22 @@
           <el-icon><WarningFilled /></el-icon><span>{{ hata }}</span>
         </div>
 
+        <!-- %90+ veya geçersiz anahtar: bu sayfada da kırmızı şerit -->
+        <div v-if="(veri && veri.uyarilar && veri.uyarilar.length) || (s.apiUyarilari || []).length"
+             class="api-uyari-strip" style="margin-bottom:14px">
+          <div class="au-bas">
+            <el-icon class="au-ikon"><WarningFilled /></el-icon>
+            <strong>
+              {{ ((veri && veri.uyarilar) || s.apiUyarilari || []).length }} API uyarısı
+            </strong>
+          </div>
+          <div v-for="u in ((veri && veri.uyarilar) || s.apiUyarilari || [])" :key="u.id || u.servis" class="au-satir">
+            <span class="au-servis">{{ u.servis }}</span>
+            <span class="au-mesaj">{{ u.mesaj }}</span>
+            <span v-if="u.islem" class="au-islem">→ {{ u.islem }}</span>
+          </div>
+        </div>
+
         <div class="grid c4" style="margin-bottom:14px">
           <div class="stat green"><div class="k">Çalışıyor</div><div class="v">{{ ozet.ok || 0 }}</div><div class="d">servis sağlıklı</div></div>
           <div class="stat grey"><div class="k">Anahtar yok</div><div class="v">{{ ozet.eksik || 0 }}</div><div class="d">aşağıdan ekle</div></div>
@@ -204,14 +246,23 @@
                 ● {{ durumEtiket(s.durum) }}
               </span>
             </div>
-            <div style="font-size:18px;font-weight:700;margin-bottom:6px">{{ deger(s) }}</div>
+            <div style="font-size:18px;font-weight:700;margin-bottom:6px">{{ kalanMetin(s) }}</div>
+            <div v-if="kullanimMetin(s)"
+                 :style="{ fontSize:'11.5px', marginBottom:'6px', color: yuzde(s) >= 90 ? '#f56c6c' : '#8a8a8a', fontWeight: yuzde(s) >= 90 ? 700 : 400 }">
+              {{ kullanimMetin(s) }}<template v-if="yuzde(s) >= 90"> · ⚠️ limitte</template>
+            </div>
             <div v-if="s.yenilenme"
                  style="font-size:11.5px;color:#2f6fbf;background:#eef5ff;display:inline-block;
                         padding:2px 8px;border-radius:10px;margin-bottom:8px">
               ⟳ {{ s.yenilenme }}
             </div>
-            <div v-if="yuzde(s) !== null" style="height:7px;background:#eef1f5;border-radius:4px;overflow:hidden;margin-bottom:8px">
-              <div :style="{ width: yuzde(s) + '%', height:'100%', background: barRenk(yuzde(s)), transition:'width .4s' }"></div>
+            <div v-if="yuzde(s) !== null" style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+              <div style="flex:1;height:7px;background:#eef1f5;border-radius:4px;overflow:hidden">
+                <div :style="{ width: yuzde(s) + '%', height:'100%', background: barRenk(yuzde(s)), transition:'width .4s' }"></div>
+              </div>
+              <span :style="{ fontSize:'11px', minWidth:'38px', textAlign:'right', fontVariantNumeric:'tabular-nums', color: barRenk(yuzde(s)), fontWeight: yuzde(s) >= 90 ? 700 : 400 }">
+                %{{ yuzde(s).toFixed(0) }}
+              </span>
             </div>
             <div v-if="s.mesaj" style="font-size:12px;color:#f56c6c;margin-bottom:6px">{{ s.mesaj }}</div>
             <div style="font-size:12px;color:#8a8a8a;line-height:1.6">

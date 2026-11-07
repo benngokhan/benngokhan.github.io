@@ -53,6 +53,8 @@
         zamanlayici: null,
         oneriler: ONERILER,
         oneriMeta: '',
+        apiDurum: null,
+        apiDurumHata: '',
         driveLink: DRIVE_ONAY
       };
     },
@@ -85,6 +87,21 @@
         if (tip === '50-58') { this.sureMin = 50; this.sureMax = 58; }
       },
       oneriSec(t) { this.konu = typeof t === 'string' ? t : t.title; },
+      async apiDurumuYukle() {
+        try {
+          const v = await this.s.gh(`/repos/${SAHIP}/${DEPO}/contents/api_durum.json?ref=main`);
+          const metin = decodeURIComponent(escape(atob((v.content || '').replace(/\n/g, ''))));
+          this.apiDurum = JSON.parse(metin); this.apiDurumHata = '';
+        } catch (e) { this.apiDurumHata = 'API durumu henüz ölçülmedi'; }
+      },
+      apiRenk(x) { return x && x.durum === 'aktif' ? 'success' : (x && x.durum === 'kota' ? 'warning' : 'danger'); },
+      apiMetin(x) {
+        if (!x) return 'Ölçülmedi';
+        const l=x.limit||{};
+        const kalan=l['remaining-requests'] || l['remaining-tokens'];
+        const toplam=l['limit-requests'] || l['limit-tokens'];
+        return `${x.durum === 'aktif' ? 'Aktif' : (x.durum === 'kota' ? 'Kota dolu' : 'Hata')} · HTTP ${x.http || '—'}${kalan ? ' · kalan '+kalan+(toplam ? '/'+toplam : '') : ''}`;
+      },
       async onerileriYukle() {
         try {
           const v = await this.s.gh(`/repos/${SAHIP}/${DEPO}/contents/konu_onerileri.json?ref=main`);
@@ -190,6 +207,7 @@
     },
     mounted() {
       this.ayarlariYukle();
+      this.apiDurumuYukle();
       this.onerileriYukle();
       this.yukle();
       this.zamanlayici = setInterval(() => this.yukle(true), 10000);
@@ -206,6 +224,16 @@
             Video bitince <a :href="driveLink" target="_blank">Drive · Onay Bekleyen Videolar</a> klasörüne düşer.
           </div>
         </el-alert>
+
+        <el-card shadow="never" style="margin-bottom:16px">
+          <template #header><b>API anlık durumu ve limitleri</b></template>
+          <el-row :gutter="12">
+            <el-col :xs="24" :sm="12"><div style="padding:12px;border:1px solid #ebeef5;border-radius:8px"><b>Gemini · Charon</b><br><el-tag style="margin-top:8px" :type="apiRenk(apiDurum && apiDurum.gemini)">{{ apiMetin(apiDurum && apiDurum.gemini) }}</el-tag><div style="font-size:11px;color:#909399;margin-top:7px" v-if="apiDurum && apiDurum.gemini && apiDurum.gemini.mesaj">{{ apiDurum.gemini.mesaj }}</div></div></el-col>
+            <el-col :xs="24" :sm="12"><div style="padding:12px;border:1px solid #ebeef5;border-radius:8px"><b>Groq · yedek metin motoru</b><br><el-tag style="margin-top:8px" :type="apiRenk(apiDurum && apiDurum.groq)">{{ apiMetin(apiDurum && apiDurum.groq) }}</el-tag><div style="font-size:11px;color:#909399;margin-top:7px" v-if="apiDurum && apiDurum.groq && apiDurum.groq.mesaj">{{ apiDurum.groq.mesaj }}</div></div></el-col>
+          </el-row>
+          <div style="font-size:11px;color:#909399;margin-top:10px">{{ apiDurum ? ('Son ölçüm: '+new Date(apiDurum.guncellendi).toLocaleString('tr-TR')+' · '+apiDurum.not) : apiDurumHata }}</div>
+          <el-button size="small" text type="primary" style="margin-top:6px" @click="apiDurumuYukle">Yenile</el-button>
+        </el-card>
 
         <el-row :gutter="16">
           <el-col :xs="24" :lg="14">

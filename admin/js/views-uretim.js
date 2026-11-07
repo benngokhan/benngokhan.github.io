@@ -87,10 +87,11 @@
       oneriSec(t) { this.konu = typeof t === 'string' ? t : t.title; },
       async onerileriYukle() {
         try {
-          const r = await fetch('../../data/uretim_konu_onerileri.json?v=' + Date.now(), { cache: 'no-store' });
-          const j = await r.json();
+          const v = await this.s.gh(`/repos/${SAHIP}/${DEPO}/contents/konu_onerileri.json?ref=main`);
+          const metin = decodeURIComponent(escape(atob((v.content || '').replace(/\n/g, ''))));
+          const j = JSON.parse(metin);
           this.oneriler = (j.suggestions || []).map(x => x.title);
-          this.oneriMeta = j.method || 'Analizli öneriler';
+          this.oneriMeta = `${j.method || 'Analizli öneriler'} · ${j.used_count || 0} geçmiş kayıt kontrol edildi`;
         } catch (e) { this.oneriMeta = 'Yedek öneriler'; }
       },
       durumEtiketi(k) {

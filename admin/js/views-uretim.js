@@ -13,7 +13,7 @@
   const SAHIP = 'benngokhan';
   const DEPO = 'yt_auto_uploader';
   const IS_AKISI = 'motor-uret.yml';
-  const DRIVE_ONAY = 'https://drive.google.com/drive/folders/1N6mMUu3rEvCIie4o4XUWegPzFngMgHHM';
+  const DRIVE_ONAY = 'https://drive.google.com/drive/folders/1xyO_jNjbpghfR7CJ1P9DUvkzdb6eC0qf';
 
   const ONERILER = [
     'Parmak uçların suda neden buruşur?',

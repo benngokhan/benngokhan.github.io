@@ -8,10 +8,12 @@
   const VIEWS = window.VIEWS;
 
   const SECRET_SECENEK = [
-    { ad: 'ELEVENLABS_API_KEY', aciklama: 'ElevenLabs TTS (yetki: User read, Voices read, TTS write)' },
-    { ad: 'OPENROUTER_API_KEY', aciklama: 'OpenRouter TTS + LLM (tek anahtar, ortak bakiye)' },
-    { ad: 'GEMINI_API_KEY', aciklama: 'Gemini LLM + TTS (aistudio.google.com)' },
+    { ad: 'PEXELS_API_KEY', aciklama: 'Pexels dikey sinematik görsel API anahtarı (pexels.com/api)' },
+    { ad: 'PIXABAY_API_KEY', aciklama: 'Pixabay yedek görsel API anahtarı (pixabay.com/api/docs)' },
+    { ad: 'GEMINI_API_KEY', aciklama: 'Gemini LLM + Charon TTS (aistudio.google.com)' },
     { ad: 'GROQ_API_KEY', aciklama: 'Groq hızlı LLM (console.groq.com)' },
+    { ad: 'OPENROUTER_API_KEY', aciklama: 'OpenRouter TTS + LLM (tek anahtar, ortak bakiye)' },
+    { ad: 'ELEVENLABS_API_KEY', aciklama: 'ElevenLabs TTS (yetki: User read, Voices read, TTS write)' },
     { ad: 'TELEGRAM_BOT_TOKEN', aciklama: 'Telegram bot token (@BotFather)' }
   ];
 

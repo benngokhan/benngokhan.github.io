@@ -12,7 +12,7 @@
     pagesRepo: 'benngokhan.github.io',
     api: 'https://api.github.com',
     telemetryPath: 'panel_telemetry.json',
-    tablePath: 'bilgidozu_yukleme_tablosu.xlsx',
+    tablePath: 'baslik.xlsx',
     forceNextPath: 'force_next_video.txt',
     repairPath: 'repair_video.json',
     slotClaimsPath: 'slot_claims.txt',
@@ -264,35 +264,90 @@
     lastAutoRefresh: 0,
     tick: 0,
 
-    /* --- oturum güvenliği: 30 dk boşta kalınca kilitlen ---------------------- */
-    idleLimitMs: 30 * 60 * 1000,
+    /* --- oturum güvenliği: arka planda/sekme değişiminde 3 dk kilit süresi --- */
+    bgGraceMs: 3 * 60 * 1000,      // Sekme/ekran değiştirince 3 dakika şifre sorma
+    idleLimitMs: 15 * 60 * 1000,   // Açık ekranda 15 dakika işlem yapılmazsa kilitle
     idleTimer: null,
+    _bgTimer: null,
     _idleTouch: null,
+    _visHandler: null,
+    _saveSessionMeta(patch) {
+      try {
+        const cur = JSON.parse(localStorage.getItem('bd_panel_session_v2') || '{}');
+        const next = Object.assign(cur, patch || {});
+        if (this.token) next.token = this.token;
+        localStorage.setItem('bd_panel_session_v2', JSON.stringify(next));
+      } catch (e) { /* sessiz */ }
+    },
     startIdleWatch() {
       this.stopIdleWatch();
+      let lastWrite = 0;
       const reset = () => {
+        const now = Date.now();
+        if (now - lastWrite > 10000) {
+          lastWrite = now;
+          this._saveSessionMeta({ lastActive: now, hiddenAt: 0 });
+        }
         if (this.idleTimer) clearTimeout(this.idleTimer);
-        this.idleTimer = setTimeout(() => {
-          if (this.authed) {
-            this.logout();
-            this.notify('warning', '30 dakika işlem yapılmadı — güvenlik için oturum kapatıldı.');
+        if (!this.remember) {
+          this.idleTimer = setTimeout(() => {
+            if (this.authed) {
+              this.logout();
+              this.notify('warning', '15 dakika işlem yapılmadı — güvenlik için ekran kilitlendi.');
+            }
+          }, this.idleLimitMs);
+        }
+      };
+      const onVis = () => {
+        if (!this.authed) return;
+        if (document.hidden) {
+          const hAt = Date.now();
+          this._saveSessionMeta({ hiddenAt: hAt, lastActive: hAt });
+          if (this._bgTimer) clearTimeout(this._bgTimer);
+          if (!this.remember) {
+            this._bgTimer = setTimeout(() => {
+              if (this.authed && document.hidden) {
+                this.logout();
+                this.loginError = '3 dakika arka planda kaldığı için ekran kilitlendi.';
+              }
+            }, this.bgGraceMs);
           }
-        }, this.idleLimitMs);
+        } else {
+          if (this._bgTimer) { clearTimeout(this._bgTimer); this._bgTimer = null; }
+          try {
+            const sess = JSON.parse(localStorage.getItem('bd_panel_session_v2') || '{}');
+            if (!sess.remember && sess.hiddenAt && (Date.now() - sess.hiddenAt > this.bgGraceMs)) {
+              this.logout();
+              this.loginError = '3 dakika arka planda kaldığı için ekran kilitlendi.';
+              return;
+            }
+          } catch (e) { /* sessiz */ }
+          this._saveSessionMeta({ hiddenAt: 0, lastActive: Date.now() });
+          reset();
+        }
       };
       this._idleTouch = reset;
+      this._visHandler = onVis;
       ['click', 'keydown', 'touchstart', 'scroll'].forEach((e) =>
         document.addEventListener(e, reset, { passive: true })
       );
+      document.addEventListener('visibilitychange', onVis);
       reset();
     },
     stopIdleWatch() {
       if (this.idleTimer) clearTimeout(this.idleTimer);
+      if (this._bgTimer) clearTimeout(this._bgTimer);
       this.idleTimer = null;
+      this._bgTimer = null;
       if (this._idleTouch) {
         ['click', 'keydown', 'touchstart', 'scroll'].forEach((e) =>
           document.removeEventListener(e, this._idleTouch)
         );
         this._idleTouch = null;
+      }
+      if (this._visHandler) {
+        document.removeEventListener('visibilitychange', this._visHandler);
+        this._visHandler = null;
       }
     },
 
@@ -309,10 +364,19 @@
         const token = await decryptVault(password);
         if (!token) throw new Error('Şifre hatalı. Erişim reddedildi.');
         this.token = token;
+        this.remember = !!remember;
         const me = await this.gh('/user');
         this.user = me;
-        const storage = remember ? localStorage : sessionStorage;
-        storage.setItem('bd_panel_token', token);
+        const now = Date.now();
+        localStorage.setItem('bd_panel_session_v2', JSON.stringify({
+          token,
+          remember: !!remember,
+          lastActive: now,
+          hiddenAt: 0
+        }));
+        if (remember) localStorage.setItem('bd_panel_token', token);
+        else localStorage.removeItem('bd_panel_token');
+        sessionStorage.setItem('bd_panel_token', token);
         this.authed = true;
         this.loginBusy = false;
         this.startIdleWatch();
@@ -335,10 +399,35 @@
     },
 
     restoreSession() {
-      const token = sessionStorage.getItem('bd_panel_token') || localStorage.getItem('bd_panel_token');
-      if (!token) return false;
-      this.token = token;
+      try {
+        const raw = localStorage.getItem('bd_panel_session_v2');
+        if (raw) {
+          const sess = JSON.parse(raw);
+          if (sess && sess.token) {
+            const now = Date.now();
+            const refTime = sess.hiddenAt || sess.lastActive || 0;
+            if (!sess.remember && refTime && (now - refTime > this.bgGraceMs)) {
+              localStorage.removeItem('bd_panel_session_v2');
+              sessionStorage.removeItem('bd_panel_token');
+              this.loginError = '3 dakika süre dolduğu için oturum kilitlendi.';
+              return false;
+            }
+            this.token = sess.token;
+            this.remember = !!sess.remember;
+            this.authed = true;
+            this._saveSessionMeta({ hiddenAt: 0, lastActive: now });
+            this.startIdleWatch();
+            return true;
+          }
+        }
+      } catch (e) { /* sessiz */ }
+      const legacy = localStorage.getItem('bd_panel_token');
+      if (!legacy) return false;
+      this.token = legacy;
+      this.remember = true;
       this.authed = true;
+      this._saveSessionMeta({ remember: true, hiddenAt: 0, lastActive: Date.now() });
+      this.startIdleWatch();
       return true;
     },
 
@@ -346,6 +435,7 @@
       this.stopIdleWatch();
       sessionStorage.removeItem('bd_panel_token');
       localStorage.removeItem('bd_panel_token');
+      localStorage.removeItem('bd_panel_session_v2');
       this.token = '';
       this.authed = false;
       this.telemetry = null;
@@ -429,19 +519,28 @@
       }
     },
 
-    /* --- İş akışları (cron + dispatch girdileri) ------------------------ */
+    /* --- İş akışları (cron + dispatch girdileri; silinen/emekli dosyalar filtrelenir) --- */
     async loadWorkflows() {
+      const RETIRED = new Set([
+        'ses-kredi.yml', 'ses-listesi.yml', 'ses-ornek.yml',
+        'gemini-gorsel-test.yml', 'gemini-ses-pilot.yml',
+        'motor-klon-pilot.yml', 'mpt-uret.yml', 'oauth-kurulumu.yml'
+      ]);
       const res = await this.gh(`/repos/${CFG.owner}/${CFG.repo}/actions/workflows?per_page=100`);
       const list = (res.workflow_runs || res.workflows || []).slice();
       const enriched = await Promise.all(
         list.map(async (w) => {
           const file = (w.path || '').split('/').pop();
+          if (!file || /^bd-\d+-temp\.ya?ml$/i.test(file) || RETIRED.has(file)) return null;
           let raw = '';
           try {
             raw = await this.gh(`/repos/${CFG.owner}/${CFG.repo}/contents/${w.path}?ref=${CFG.branch}`, {
               accept: 'application/vnd.github.raw'
             });
-          } catch (e) { /* ignore */ }
+          } catch (e) {
+            return null; // main dalında silinmiş hayalet workflow kaydını gösterme
+          }
+          if (!raw) return null;
           const crons = [];
           const cronRe = /-\s*cron:\s*["']([^"']+)["']/g;
           let m;
@@ -455,7 +554,7 @@
           });
         })
       );
-      this.workflows = enriched.sort((a, b) => a.name.localeCompare(b.name, 'tr'));
+      this.workflows = enriched.filter(Boolean).sort((a, b) => a.name.localeCompare(b.name, 'tr'));
       this.workflowsLoadedAt = Date.now();
       return this.workflows;
     },
@@ -892,6 +991,9 @@
     },
     inventory() {
       return (this.telemetry && this.telemetry.drive_inventory) || {};
+    },
+    telemetryDrive() {
+      return this.inventory();
     },
     retention() {
       return (this.telemetry && this.telemetry.retention) || { metrics: [], curves: [], info: {} };

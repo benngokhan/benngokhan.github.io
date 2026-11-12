@@ -155,7 +155,7 @@
 
         <div class="grid c4" style="margin-bottom:14px">
           <div class="stat blue"><div class="bar"></div><div class="k">Toplam görüntülenme</div>
-            <div class="v">{{ num(totals.views) }}</div><div class="d">{{ totals.count }} video · {{ shortsCount }} shorts / {{ longCount }} uzun</div></div>
+            <div class="v">{{ num(totals.views) }}</div><div class="d">{{ totals.count }} analiz edilen video</div></div>
           <div class="stat green"><div class="bar"></div><div class="k">Ortalama izlenme</div>
             <div class="v">{{ pct(totals.avgPct) }}</div><div class="d">video başına izlenen yüzde</div></div>
           <div class="stat orange"><div class="bar"></div><div class="k">3. saniye tutma</div>
@@ -186,12 +186,7 @@
         <div class="card">
           <div class="card-head">
             <h3><el-icon><List /></el-icon> Video metrikleri</h3>
-            <el-radio-group v-model="typeFilter" size="small">
-              <el-radio-button label="all">Tümü</el-radio-button>
-              <el-radio-button label="short">Shorts</el-radio-button>
-              <el-radio-button label="long">Uzun</el-radio-button>
-            </el-radio-group>
-            <el-switch v-model="curveOnly" size="small" active-text="Yalnız eğrisi olanlar" />
+            <el-switch v-model="curveOnly" size="small" active-text="Yalnızca retansiyon eğrisi olanlar" />
             <span class="sub" style="margin-left:auto">{{ rows.length }} kayıt</span>
           </div>
           <div class="card-body tight">
@@ -452,17 +447,13 @@
       rules() { return (this.s.telemetry && this.s.telemetry.schedule_rules) || {}; },
       week() {
         const days = ['Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi', 'Pazar'];
-        return days.map((d, i) => ({
+        return days.map((d) => ({
           day: d,
-          isFriday: d === 'Cuma',
+          isFriday: false,
           slots: [
-            { time: '12:12', type: 'cold', label: 'Isınma (kuyruk gecikmesi önleyici)' },
-            { time: '12:30', type: d === 'Cuma' ? 'long' : 'short', label: d === 'Cuma' ? 'Uzun video yayını' : 'Shorts yayını' },
-            { time: '12:50', type: 'watch', label: 'Bekçi erken uyarı' },
-            { time: '13:00', type: 'watch', label: 'Bekçi tescil / kurtarma' },
-            { time: '19:12', type: 'cold', label: 'Isınma' },
-            { time: '19:30', type: 'short', label: 'Shorts yayını' },
-            { time: '19:50', type: 'watch', label: 'Bekçi erken uyarı' },
+            { time: '19:12', type: 'cold', label: 'Isınma (kuyruk gecikmesi önleyici)' },
+            { time: '19:30', type: 'short', label: 'Akşam Shorts yayını (9:16)' },
+            { time: '19:50', type: 'watch', label: 'Bekçi erken kontrol' },
             { time: '20:00', type: 'watch', label: 'Bekçi tescil / kurtarma' }
           ]
         }));
@@ -513,7 +504,7 @@
 
         <div class="alert-strip info">
           <el-icon><InfoFilled /></el-icon>
-          <span>Kural: <b>Cuma 12:30 uzun video</b>, diğer günler ve her akşam 19:30 Shorts. Bekçi 12:50/13:00 ve 19:50/20:00'de durumu tescil eder ve gerekirse kurtarma yapar.</span>
+          <span>Kural: <b>Haftanın 7 günü saat 19:30 TR'de otomatik 9:16 Shorts yayınlanır.</b> Bekçi 19:50 ve 20:00'de durumu doğrular, gerekirse kurtarma yapar.</span>
         </div>
 
         <div class="card">
@@ -577,17 +568,14 @@
           <div class="card-body">
             <div class="grid c2">
               <div>
-                <div class="kv"><span class="k">Günlük slotlar (TR)</span><span class="v">{{ (rules.daily_slots_tr || []).join(' · ') }}</span></div>
-                <div class="kv"><span class="k">Isınma tetikleri (TR)</span><span class="v">{{ (rules.prewarm_tr || []).join(' · ') }}</span></div>
-                <div class="kv"><span class="k">Bekçi (TR)</span><span class="v">{{ (rules.watchdog_tr || []).join(' · ') }}</span></div>
-                <div class="kv"><span class="k">Cuma 12:30</span><span class="v">{{ rules.friday_1230 === 'long' ? 'Uzun video' : rules.friday_1230 }}</span></div>
+                <div class="kv"><span class="k">Günlük yayın slotu (TR)</span><span class="v">{{ (rules.daily_slots_tr || ['19:30']).join(' · ') }}</span></div>
+                <div class="kv"><span class="k">Isınma tetiği (TR)</span><span class="v">{{ (rules.prewarm_tr || ['19:12']).join(' · ') }}</span></div>
+                <div class="kv"><span class="k">Bekçi kontrolü (TR)</span><span class="v">{{ (rules.watchdog_tr || ['19:50', '20:00']).join(' · ') }}</span></div>
               </div>
               <div>
-                <div class="kv"><span class="k">Cuma 19:30</span><span class="v">{{ rules.friday_1930 === 'short' ? 'Shorts' : rules.friday_1930 }}</span></div>
-                <div class="kv"><span class="k">Diğer günler</span><span class="v">{{ rules.other_days === 'short' ? 'Shorts' : rules.other_days }}</span></div>
-                <div class="kv"><span class="k">Kuyruk tabanı</span><span class="v">Short ≥ {{ rules.min_shorts_number ?? 155 }} · Uzun ≥ {{ rules.min_long_number ?? 8 }}</span></div>
-                <div class="kv"><span class="k">Kapak üretimi / çapraz paylaşım</span>
-                  <span class="v">{{ rules.cover_fallback_generation ? 'açık' : 'kapalı' }} / {{ rules.crosspost_enabled ? 'açık' : 'pasif' }}</span></div>
+                <div class="kv"><span class="k">Yayın formatı</span><span class="v">7/7 Yalnızca 9:16 Shorts</span></div>
+                <div class="kv"><span class="k">Ana tablo</span><span class="v mono-sm">baslik.xlsx</span></div>
+                <div class="kv"><span class="k">Çapraz paylaşım</span><span class="v">{{ rules.crosspost_enabled ? 'açık' : 'pasif' }}</span></div>
               </div>
             </div>
           </div>
@@ -702,13 +690,13 @@
         </div>
 
         <div class="card">
-          <div class="card-head"><h3><el-icon><Document /></el-icon> Durum dosyaları</h3></div>
+          <div class="card-head"><h3><el-icon><Document /></el-icon> Kayıt &amp; Güvenlik Özeti</h3></div>
           <div class="card-body">
-            <div class="kv"><span class="k">force_next_video.txt</span><span class="v mono-sm">{{ (s.files.force || '').trim() || 'boş' }}</span></div>
-            <div class="kv"><span class="k">repair_video.json</span><span class="v mono-sm">{{ (s.files.repair || '').trim() ? 'dolu' : 'boş' }}</span></div>
-            <div class="kv"><span class="k">slot_claims.txt</span><span class="v mono-sm">{{ claimsCount }} talep</span></div>
-            <div class="kv"><span class="k">uploaded.txt</span><span class="v mono-sm">{{ uploadedCount }} kayıt</span></div>
-            <div class="kv"><span class="k">status_report.json</span>
+            <div class="kv"><span class="k">Ana yayın tablosu</span><span class="v mono-sm">baslik.xlsx</span></div>
+            <div class="kv"><span class="k">Arka plan kilit süresi</span><span class="v">3 dakika (sekme/ekran değişiminde şifre sormaz)</span></div>
+            <div class="kv"><span class="k">Tescillenen slot kaydı</span><span class="v mono-sm">{{ claimsCount }} kayıt</span></div>
+            <div class="kv"><span class="k">Yayınlanan video kaydı (uploaded.txt)</span><span class="v mono-sm">{{ uploadedCount }} kayıt</span></div>
+            <div class="kv"><span class="k">Sistem durum raporu</span>
               <span class="v">{{ statusReport ? statusReport.overall_label + ' · ' + statusReport.updated_at : '—' }}</span></div>
           </div>
         </div>

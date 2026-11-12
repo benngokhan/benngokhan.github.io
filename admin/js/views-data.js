@@ -23,7 +23,7 @@
       };
     },
     computed: {
-      all() { return this.s.telemetryQueue(); },
+      all() { return this.s.telemetryQueue().filter((x) => x.type !== 'long'); },
       forceLock() { return (this.s.files.force || '').trim(); },
       stats() {
         const q = this.all;
@@ -32,13 +32,11 @@
           ready: q.filter((x) => x.is_ready).length,
           published: q.filter((x) => x.is_published).length,
           noCover: q.filter((x) => x.is_ready && !x.has_drive_cover).length,
-          shorts: q.filter((x) => x.type === 'short').length,
-          longs: q.filter((x) => x.type === 'long').length
+          shorts: q.length
         };
       },
       filtered() {
         return this.all.filter((x) => {
-          if (this.typeFilter !== 'all' && x.type !== this.typeFilter) return false;
           if (this.readyOnly && !x.is_ready) return false;
           if (this.search) {
             const q = this.search.toLowerCase();
@@ -111,36 +109,27 @@
 
         <div v-if="forceLock" class="alert-strip warn">
           <el-icon><Lock /></el-icon>
-          <span>Aktif sıra kilidi: <b>{{ forceLock }}</b> — sonraki yükleme bu dosyayı zorlar (sıra dışıysa yükleyici güvenlik gereği reddeder).</span>
+          <span>Sıradaki yayın için seçili dosya: <b>{{ forceLock }}</b></span>
           <span class="spacer"></span>
-          <el-button size="small" type="warning" plain @click="clearLock">Kilidi kaldır</el-button>
-        </div>
-        <div v-else class="alert-strip ok">
-          <el-icon><CircleCheckFilled /></el-icon>
-          <span>Sıra kilidi yok — yükleyici otomatik sırayı (önce en küçük numaralı hazır video) kullanıyor.</span>
+          <el-button size="small" type="warning" plain @click="clearLock">Normal sıraya dön</el-button>
         </div>
 
         <div class="grid c4" style="margin-bottom:14px">
-          <div class="stat blue"><div class="bar"></div><div class="k">Hazır</div><div class="v">{{ stats.ready }}</div>
-            <div class="d">{{ stats.shorts }} short · {{ stats.longs }} uzun</div></div>
+          <div class="stat blue"><div class="bar"></div><div class="k">Hazır Shorts</div><div class="v">{{ stats.ready }}</div>
+            <div class="d">her gün 19:30 TR yayına hazır</div></div>
           <div class="stat green"><div class="bar"></div><div class="k">Yayınlandı</div><div class="v">{{ stats.published }}</div>
-            <div class="d">toplam kuyruk satırı {{ stats.total }}</div></div>
-          <div class="stat orange"><div class="bar"></div><div class="k">Kapaksız hazır video</div><div class="v">{{ stats.noCover }}</div>
-            <div class="d">kural: kapak üretilmez, hazır kapak beklenir</div></div>
-          <div class="stat grey"><div class="bar"></div><div class="k">Sıradaki</div>
-            <div class="v" style="font-size:16px">{{ (s.telemetry && s.telemetry.queue_summary && s.telemetry.queue_summary.next_short) || '—' }}</div>
-            <div class="d">uzun: {{ (s.telemetry && s.telemetry.queue_summary && s.telemetry.queue_summary.next_long) || '—' }}</div></div>
+            <div class="d">aktif seride toplam {{ stats.total }} kayıt</div></div>
+          <div class="stat orange"><div class="bar"></div><div class="k">Kapaksız Hazır Video</div><div class="v">{{ stats.noCover }}</div>
+            <div class="d">{{ stats.noCover ? 'Kapak Yükle ekranından tamamla' : 'tüm hazır kapaklar tam' }}</div></div>
+          <div class="stat grey"><div class="bar"></div><div class="k">Sıradaki Yayın</div>
+            <div class="v" style="font-size:17px">{{ (s.telemetry && s.telemetry.queue_summary && s.telemetry.queue_summary.next_short) || '—' }}</div>
+            <div class="d">19:30 TR otomatik Shorts</div></div>
         </div>
 
         <div class="card">
           <div class="card-head">
-            <el-radio-group v-model="typeFilter" size="small">
-              <el-radio-button label="all">Tümü ({{ stats.total }})</el-radio-button>
-              <el-radio-button label="short">Shorts ({{ stats.shorts }})</el-radio-button>
-              <el-radio-button label="long">Uzun ({{ stats.longs }})</el-radio-button>
-            </el-radio-group>
-            <el-switch v-model="readyOnly" size="small" active-text="Yalnız hazır" />
-            <span class="sub" style="margin-left:auto">{{ filtered.length }} satır</span>
+            <el-switch v-model="readyOnly" size="small" active-text="Yalnızca hazır bekleyenleri göster" />
+            <span class="sub" style="margin-left:auto">{{ filtered.length }} Shorts kaydı</span>
           </div>
           <div class="card-body tight">
             <el-table :data="filtered" size="small" style="width:100%" height="520" v-loading="s.telemetryBusy">
@@ -184,7 +173,7 @@
               <el-table-column label="İşlem" width="188" fixed="right">
                 <template #default="{ row }">
                   <el-button link size="small" type="primary" @click="showRow(row)">Detay</el-button>
-                  <el-button v-if="row.is_ready && !row.is_published" link size="small" @click="lock(row)">Kilitle</el-button>
+                  <el-button link size="small" @click="goTo('kapak')">Kapak</el-button>
                   <el-button v-if="row.is_ready && !row.is_published" link size="small" type="danger" @click="publishNow(row)">Yayınla</el-button>
                   <el-button v-if="row.is_published && row.youtube_url" link size="small" @click="openLink(row.youtube_url)">İzle</el-button>
                 </template>
@@ -319,8 +308,8 @@
       <div>
         <div class="page-head">
           <div>
-            <h2>Excel Tablo</h2>
-            <p>bilgidozu_yukleme_tablosu.xlsx · {{ wb.loaded ? (wb.names.length + ' sayfa · ' + (wb.meta.commit ? 'son commit ' + ago(wb.meta.commit.author.date) + ' · ' + (wb.meta.commit.author.name || '') : '')) : 'yükleniyor…' }}</p>
+            <h2>Ana Tablo · baslik.xlsx</h2>
+            <p>baslik.xlsx · {{ wb.loaded ? (wb.names.length + ' sayfa · ' + (wb.meta.commit ? 'son commit ' + ago(wb.meta.commit.author.date) + ' · ' + (wb.meta.commit.author.name || '') : '')) : 'yükleniyor…' }}</p>
           </div>
           <div class="head-actions">
             <el-switch v-model="editMode" size="small" active-text="Düzenleme modu" :disabled="!wb.loaded" />
@@ -392,11 +381,9 @@
       folders() { return this.t.folders || {}; },
       groups() {
         return [
-          { key: 'shorts_videos', title: 'Kısa Video', icon: 'VideoCamera', folder: this.folders.shorts_video, color: 'blue' },
-          { key: 'shorts_covers', title: 'Kısa Kapak', icon: 'Picture', folder: this.folders.shorts_cover, color: 'green' },
-          { key: 'long_videos', title: 'Uzun Video', icon: 'Film', folder: this.folders.long_video, color: 'orange' },
-          { key: 'long_covers', title: 'Uzun Kapak', icon: 'PictureFilled', folder: this.folders.long_cover, color: 'red' },
-          { key: 'ceo_files', title: 'CEO (tablo & şablonlar)', icon: 'FolderOpened', folder: this.folders.ceo, color: 'grey' }
+          { key: 'shorts_videos', title: 'Shorts Videoları', icon: 'VideoCamera', folder: this.folders.shorts_video, color: 'blue' },
+          { key: 'shorts_covers', title: '9:16 Kapaklar', icon: 'Picture', folder: this.folders.shorts_cover, color: 'green' },
+          { key: 'ceo_files', title: 'Ana Klasör (baslik.xlsx)', icon: 'FolderOpened', folder: this.folders.ceo, color: 'grey' }
         ];
       },
       current() {
@@ -792,53 +779,11 @@
           </div>
         </div>
 
-        <div class="grid c4" style="margin-bottom:14px">
-          <div class="stat orange"><div class="bar"></div><div class="k">Son 30 çalıştırmada hata</div>
-            <div class="v">{{ failedRuns.length }}</div><div class="d">başarısız / zaman aşımı</div></div>
-          <div class="stat blue"><div class="bar"></div><div class="k">Sıra kilidi</div>
-            <div class="v" style="font-size:16px">{{ (files.force || '').trim() || 'yok' }}</div>
-            <div class="d">force_next_video.txt</div></div>
-          <div class="stat grey"><div class="bar"></div><div class="k">Onarım talebi</div>
-            <div class="v" style="font-size:16px">{{ (files.repair || '').trim() ? 'var' : 'yok' }}</div>
-            <div class="d">repair_video.json</div></div>
-          <div class="stat green"><div class="bar"></div><div class="k">Slot talepleri</div>
-            <div class="v">{{ claims.length }}</div><div class="d">slot_claims.txt (son 20)</div></div>
-        </div>
-
-        <div class="grid c2">
-          <div class="card">
-            <div class="card-head"><h3><el-icon><Lock /></el-icon> force_next_video.txt</h3>
-              <span class="sub">sonraki yüklemede zorlanacak dosya</span>
-              <div class="head-actions">
-                <el-button size="small" type="primary" :loading="s.filesBusy" @click="saveForce">Kaydet</el-button>
-                <el-button size="small" @click="clearForce">Temizle</el-button>
-              </div>
-            </div>
-            <div class="card-body">
-              <el-input v-model="forceDraft" size="small" placeholder="video_155.mp4" @input="forceDirty = true">
-                <template #prepend>dosya</template>
-              </el-input>
-              <div class="muted" style="margin-top:8px">
-                Sıra dışı bir dosya yazarsan yükleyici güvenlik kuralı gereği çalışmayı durdurur
-                (yalnızca hazır ve sıradaki dosya kabul edilir).
-              </div>
-            </div>
-          </div>
-
-          <div class="card">
-            <div class="card-head"><h3><el-icon><Tools /></el-icon> repair_video.json</h3>
-              <div class="head-actions">
-                <el-button size="small" @click="repairTemplate">Şablon</el-button>
-                <el-button size="small" type="primary" :loading="s.filesBusy" @click="saveRepair">Kaydet</el-button>
-              </div>
-            </div>
-            <div class="card-body">
-              <el-input v-model="repairDraft" type="textarea" :rows="8" class="code-edit mono"
-                        placeholder='{"file_name":"video_160.mp4","title":"..."}' @input="repairDirty = true; validateRepair()" />
-              <div v-if="repairError" class="alert-strip err" style="margin:8px 0 0">JSON hatası: {{ repairError }}</div>
-              <div class="muted" style="margin-top:6px">Kaydedilince sonraki yükleme çalıştırması "Video onarımı" adımında uygular.</div>
-            </div>
-          </div>
+        <div class="grid c2" style="margin-bottom:14px">
+          <div class="stat orange"><div class="bar"></div><div class="k">Son 30 Çalıştırmada Hata</div>
+            <div class="v">{{ failedRuns.length }}</div><div class="d">başarısız / zaman aşımı koşu</div></div>
+          <div class="stat green"><div class="bar"></div><div class="k">Tescillenen Yayın Slotları</div>
+            <div class="v">{{ claims.length }}</div><div class="d">son 20 yayın kaydı</div></div>
         </div>
 
         <div class="card">

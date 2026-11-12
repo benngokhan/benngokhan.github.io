@@ -91,40 +91,35 @@
           const d = nextCronRun(expr);
           return d ? { label, at: d, diff: d.getTime() - now.getTime() } : null;
         };
-        const list = [mk('30 9 * * *', '12:30 slotu'), mk('30 16 * * *', '19:30 slotu')].filter(Boolean);
+        const list = [mk('30 16 * * *', '19:30 Akşam Shorts Slotu')].filter(Boolean);
         list.sort((a, b) => a.diff - b.diff);
         return list;
       },
       nextSlotDetail() {
         const s0 = this.nextSlots[0];
         if (!s0) return null;
-        const trDate = new Date(s0.at.getTime() + 3 * 3600 * 1000);
-        const dow = trDate.getUTCDay();
-        const isFriday = dow === 5;
-        let type = 'short';
-        if (isFriday && s0.label.indexOf('12:30') === 0) type = 'long';
-        const name = type === 'long' ? this.q.next_long : this.q.next_short;
-        const totalSec = Math.floor(s0.diff / 1000);
+        const name = this.q.next_short;
+        const totalSec = Math.max(0, Math.floor(s0.diff / 1000));
         return {
           label: s0.label,
-          type,
+          type: 'short',
           name,
           at: s0.at,
           countdown: `${Math.floor(totalSec / 3600)} sa ${Math.floor((totalSec % 3600) / 60)} dk`,
-          isFriday
+          isFriday: false
         };
       },
       pipeline() {
-        const hasVideo = (this.inv.shorts_videos || []).length + (this.inv.long_videos || []).length;
-        const hasCover = (this.inv.shorts_covers || []).length + (this.inv.long_covers || []).length;
+        const hasVideo = (this.inv.shorts_videos || []).length;
+        const hasCover = (this.inv.shorts_covers || []).length;
         const lastUploadOk = this.lastUploadRun && this.lastUploadRun.conclusion === 'success';
         const lastRetOk = this.lastRetentionRun && this.lastRetentionRun.conclusion === 'success';
         return [
-          { name: 'Drive', ok: hasVideo > 0, detail: `${hasVideo} video` },
-          { name: 'Kapak', ok: hasCover > 0, detail: `${hasCover} kapak` },
-          { name: 'Kuyruk', ok: (this.q.total_ready || 0) > 0, detail: `${this.q.total_ready || 0} hazır` },
-          { name: 'Yükleme', ok: !!lastUploadOk, detail: this.lastUploadRun ? ui.statusLabel(this.lastUploadRun.status, this.lastUploadRun.conclusion) : '—' },
-          { name: 'Retansiyon', ok: !!lastRetOk, detail: `${this.retention.video_count || 0} video` }
+          { name: 'Drive Video', ok: hasVideo > 0, detail: `${hasVideo} Shorts` },
+          { name: '9:16 Kapak', ok: hasCover > 0, detail: `${hasCover} kapak` },
+          { name: 'Shorts Kuyruğu', ok: (this.q.ready_shorts || 0) > 0, detail: `${this.q.ready_shorts || 0} hazır` },
+          { name: 'Son Yayın', ok: !!lastUploadOk, detail: this.lastUploadRun ? ui.statusLabel(this.lastUploadRun.status, this.lastUploadRun.conclusion) : '—' },
+          { name: 'Analitik', ok: !!lastRetOk, detail: `${this.retention.video_count || 0} video` }
         ];
       }
     },
@@ -163,6 +158,7 @@
         const t = this.telemetry;
         if (!t || !t.queue_summary) return;
         const q = this.q;
+        const yayinlananSayisi = (this.queue || []).filter((x) => x.is_published && x.type !== 'long').length;
         ui.draw(this, 'chartQueue', {
           tooltip: { trigger: 'item' },
           legend: { bottom: 0, itemWidth: 9, itemHeight: 9, textStyle: { fontSize: 11 } },
@@ -172,7 +168,7 @@
             label: { show: true, formatter: '{b}\\n{c}', fontSize: 11, color: '#606266' },
             data: [
               { name: 'Hazır Shorts', value: q.ready_shorts || 0, itemStyle: { color: '#409eff' } },
-              { name: 'Hazır Uzun', value: q.ready_longs || 0, itemStyle: { color: '#9b59b6' } }
+              { name: 'Yayınlanan (Aktif Seri)', value: yayinlananSayisi, itemStyle: { color: '#67c23a' } }
             ]
           }]
         });
@@ -272,38 +268,38 @@
         <div class="grid c4">
           <div class="stat blue">
             <div class="bar"></div>
-            <div class="k"><el-icon><VideoCamera /></el-icon> Hazır video</div>
-            <div class="v">{{ q.total_ready ?? '—' }}</div>
-            <div class="d">{{ q.ready_shorts ?? 0 }} Shorts · {{ q.ready_longs ?? 0 }} Uzun</div>
+            <div class="k"><el-icon><VideoCamera /></el-icon> Hazır Shorts</div>
+            <div class="v">{{ q.ready_shorts ?? '—' }}</div>
+            <div class="d">9:16 dikey video kuyrukta hazır</div>
           </div>
           <div class="stat green">
             <div class="bar"></div>
-            <div class="k"><el-icon><Timer /></el-icon> Stok</div>
-            <div class="v">{{ q.days_of_stock ?? '—' }}<span style="font-size:14px"> gün</span></div>
-            <div class="d">2 slot/gün · sıradaki short {{ q.next_short || '—' }}</div>
+            <div class="k"><el-icon><Timer /></el-icon> Yayın Stoğu</div>
+            <div class="v">{{ q.ready_shorts ?? q.days_of_stock ?? '—' }}<span style="font-size:14px"> gün</span></div>
+            <div class="d">her gün 19:30 TR · sıradaki {{ q.next_short || '—' }}</div>
           </div>
           <div class="stat orange">
             <div class="bar"></div>
-            <div class="k"><el-icon><Warning /></el-icon> Eksik kapak</div>
+            <div class="k"><el-icon><Picture /></el-icon> Eksik Kapak</div>
             <div class="v">{{ (q.missing_covers || []).length }}</div>
-            <div class="d">{{ (q.missing_covers || []).join(', ') || 'Kapak sorunu yok' }}</div>
+            <div class="d">{{ (q.missing_covers || []).join(', ') || 'Tüm hazır videoların kapağı tam' }}</div>
           </div>
           <div class="stat" :class="successRate !== null && successRate < 80 ? 'red' : 'grey'">
             <div class="bar"></div>
-            <div class="k"><el-icon><DataAnalysis /></el-icon> Çalıştırma başarı oranı</div>
+            <div class="k"><el-icon><DataAnalysis /></el-icon> Otomasyon Sağlığı</div>
             <div class="v">{{ successRate === null ? '—' : '%' + successRate }}</div>
-            <div class="d">son {{ s.runs.length }} çalıştırma · 24s içinde {{ uploads24h }} yayın</div>
+            <div class="d">son {{ s.runs.length }} koşu · 24s içinde {{ uploads24h }} yayın</div>
           </div>
         </div>
 
         <div class="card" style="margin-top:14px">
           <div class="card-head">
-            <h3><el-icon><Connection /></el-icon> Yayın hattı</h3>
-            <span class="sub">Drive → kapak → kuyruk → yükleme → analitik</span>
+            <h3><el-icon><Connection /></el-icon> Yayın Hattı</h3>
+            <span class="sub">Drive → 9:16 kapak → baslik.xlsx → YouTube Shorts → analitik</span>
             <div class="head-actions">
-              <el-tag size="small" type="info" effect="plain">Sıradaki: {{ nextSlotDetail ? nextSlotDetail.label + ' · ' + (nextSlotDetail.type === 'long' ? 'UZUN' : 'SHORT') : '—' }}</el-tag>
-              <el-tag size="small" :type="nextSlotDetail && nextSlotDetail.type === 'long' ? 'danger' : 'primary'" effect="dark" v-if="nextSlotDetail">
-                {{ nextSlotDetail.name }} · {{ nextSlotDetail.countdown }}
+              <el-tag size="small" type="info" effect="plain">Sıradaki: {{ nextSlotDetail ? nextSlotDetail.label : '—' }}</el-tag>
+              <el-tag size="small" type="primary" effect="dark" v-if="nextSlotDetail">
+                {{ nextSlotDetail.name || 'Hazır' }} · {{ nextSlotDetail.countdown }}
               </el-tag>
             </div>
           </div>
@@ -397,17 +393,17 @@
 
         <div class="grid c2">
           <div class="card">
-            <div class="card-head"><h3><el-icon><Calendar /></el-icon> Yaklaşan slotlar</h3>
-              <span class="sub">TR saati · Cuma 12:30 uzun</span></div>
+            <div class="card-head"><h3><el-icon><Calendar /></el-icon> Yayın Planı &amp; Kurallar</h3>
+              <span class="sub">Haftanın 7 günü 19:30 TR Shorts</span></div>
             <div class="card-body">
               <div v-for="sl in nextSlots" :key="sl.label" class="kv">
                 <span class="k">{{ sl.label }} ({{ sl.at.toISOString().slice(11, 16) }} UTC)</span>
                 <span class="v">{{ trTime(sl.at.toISOString()) }}</span>
               </div>
-              <div class="kv"><span class="k">Bekçi (uyarı / tescil)</span><span class="v">12:50 / 13:00 · 19:50 / 20:00</span></div>
-              <div class="kv"><span class="k">Kurallar</span><span class="v">Short ≥ video_155 · Uzun ≥ uzun_video_8</span></div>
-              <div class="kv"><span class="k">Kapak üretimi</span><span class="v">Kapalı (yalnız hazır kapak)</span></div>
-              <div class="kv"><span class="k">Çapraz paylaşım</span><span class="v">Instagram/TikTok pasif</span></div>
+              <div class="kv"><span class="k">Slot Bekçisi (kontrol / kurtarma)</span><span class="v">19:50 / 20:00 TR</span></div>
+              <div class="kv"><span class="k">Ana Yayın Tablosu</span><span class="v mono-sm">baslik.xlsx</span></div>
+              <div class="kv"><span class="k">Yayın Formatı</span><span class="v">Yalnızca 9:16 Shorts (1080×1920)</span></div>
+              <div class="kv"><span class="k">Ekran Kilit Süresi</span><span class="v">Sekme değişiminde 3 dakika</span></div>
             </div>
           </div>
           <div class="card">

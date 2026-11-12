@@ -1,21 +1,20 @@
 /* ============================================================================
-   Görünüm: Kapak Yükle — panelden kapak seç, kırp, Drive'a yaz, YouTube'a uygula
-   Bot kapak atmadıysa Studio'ya gitmeden buradan tamamlanır.
+   Görünüm: Kapak Yükle (9:16 Shorts) — dikey kapak önizleme, otomatik eşleme,
+   Drive'a yazma ve yayındaki Shorts videosuna tek tıkla uygulama.
    ========================================================================== */
 (function () {
   'use strict';
   const { store, bytes } = window.BD;
   const VIEWS = window.VIEWS;
 
-  const TARGET = { short: { w: 1080, h: 1920, label: '9:16 dikey' }, long: { w: 1920, h: 1080, label: '16:9 yatay' } };
+  const HEDEF = { w: 1080, h: 1920, label: '9:16 Dikey Shorts (1080×1920)' };
 
   function parseUploadedIds(text) {
-    /* uploaded.txt satırları: video_155.mp4 | 2026-11-02 10:11 | https://youtu.be/MgpEXhYe2-8 */
     const out = {};
     String(text || '').split('\n').forEach((line) => {
-      const m = line.match(/(video_\d+|uzun_video_\d+)\.mp4/);
-      const id = line.match(/(?:youtu\.be\/|[?&]v=)([A-Za-z0-9_-]{11})/);
-      if (m && id) out[m[1] + '.mp4'] = id[1];
+      const m = line.match(/(video_\d+)\.mp4/i);
+      const id = line.match(/(?:youtu\.be\/|shorts\/|[?&]v=)([A-Za-z0-9_-]{11})/);
+      if (m && id) out[m[1].toLowerCase() + '.mp4'] = id[1];
     });
     return out;
   }
@@ -25,10 +24,11 @@
     data() {
       return {
         s: store,
-        tip: 'short',
         no: '',
+        kaynakTipi: 'drive', // 'drive' | 'yerel'
         fileName: '',
         driveFileId: '',
+        driveThumbHata: false,
         imgEl: null,
         imgW: 0,
         imgH: 0,
@@ -36,47 +36,71 @@
         zoom: 1,
         offsetY: 0,
         videoId: '',
-        temizle: false,
+        temizle: true,
         busy: false,
         runId: null,
         sonuc: null,
-        pollTimer: null,
-        manuelNo: ''
+        pollTimer: null
       };
     },
     computed: {
       kuyruk() {
-        return (this.s.telemetryQueue() || []).slice().sort((a, b) => Number(b.number) - Number(a.number));
+        return (this.s.telemetryQueue() || [])
+          .filter((x) => x.type !== 'long')
+          .slice()
+          .sort((a, b) => {
+            if (a.is_ready !== b.is_ready) return a.is_ready ? -1 : 1;
+            return Number(a.number) - Number(b.number);
+          });
       },
       yayinIdleri() {
         return parseUploadedIds(this.s.files && this.s.files.uploaded);
       },
       driveKapaklar() {
-        const inv = this.s.telemetryDrive ? this.s.telemetryDrive() : {};
-        const liste = this.tip === 'short' ? (inv.shorts_covers || []) : (inv.long_covers || []);
-        return liste.slice().sort((a, b) => String(b.modifiedTime || '').localeCompare(String(a.modifiedTime || '')));
+        const inv = this.s.inventory ? this.s.inventory() : {};
+        const liste = inv.shorts_covers || [];
+        return liste.slice().sort((a, b) => {
+          const na = Number((a.name.match(/(\d+)/) || [])[1] || 0);
+          const nb = Number((b.name.match(/(\d+)/) || [])[1] || 0);
+          return na - nb;
+        });
       },
       secilen() {
-        return this.kuyruk.find((x) => String(x.number) === String(this.no) && x.type === this.tip) || null;
+        return this.kuyruk.find((x) => String(x.number) === String(this.no)) || null;
+      },
+      secilenDriveKapak() {
+        return this.driveKapaklar.find((x) => x.id === this.driveFileId) || null;
+      },
+      driveThumbUrl() {
+        if (!this.driveFileId) return '';
+        return `https://drive.google.com/thumbnail?id=${encodeURIComponent(this.driveFileId)}&sz=w720`;
       },
       hedef() {
-        return TARGET[this.tip];
+        return HEDEF;
       },
       tahminiVideoId() {
         if (!this.secilen) return '';
-        return this.yayinIdleri[this.secilen.file_name] || '';
+        const fromQueue = (this.secilen.youtube_url || '').match(/(?:youtu\.be\/|shorts\/|[?&]v=)([A-Za-z0-9_-]{11})/);
+        if (fromQueue) return fromQueue[1];
+        return this.yayinIdleri[String(this.secilen.file_name || '').toLowerCase()] || '';
       },
       hazir() {
-        return this.no && (this.driveFileId || this.imgEl) && !this.busy;
+        return Boolean(this.no) && Boolean(this.driveFileId || this.imgEl) && !this.busy;
       }
     },
     watch: {
-      no() { this.otomatikVideoId(); this.ciz(); },
-      tip() { this.no = ''; this.videoId = ''; this.driveFileId = ''; this.fileName = ''; this.imgEl = null; this.ciz(); },
+      no(yeniNo) {
+        this.otomatikEsle(yeniNo);
+        this.$nextTick(() => this.ciz());
+      },
       driveFileId(id) {
+        this.driveThumbHata = false;
         const f = this.driveKapaklar.find((x) => x.id === id);
-        this.fileName = f ? f.name : '';
-        this.imgEl = null;
+        if (f) {
+          this.fileName = f.name;
+          this.kaynakTipi = 'drive';
+          this.imgEl = null;
+        }
       },
       mode() { this.ciz(); },
       zoom() { this.ciz(); },
@@ -85,19 +109,48 @@
     methods: {
       bytes,
       dosyaAdiFor() {
-        return this.tip === 'short' ? `kapak_${this.no}.jpg` : `uzun_kapak_${this.no}.jpg`;
+        return `kapak_${this.no}.jpg`;
       },
-      otomatikVideoId() {
+      otomatikEsle(numara) {
         this.videoId = this.tahminiVideoId || '';
+        if (!numara) return;
+        const nStr = String(numara).trim();
+        // video_N seçilince Drive'daki kapak_N.jpg / .png dosyasını otomatik seç
+        const eslesen = this.driveKapaklar.find((f) => {
+          const ad = String(f.name || '').toLowerCase();
+          return ad === `kapak_${nStr}.jpg` || ad === `kapak_${nStr}.jpeg` || ad === `kapak_${nStr}.png` || ad === `short_kapak_${nStr}.jpg`;
+        });
+        if (eslesen) {
+          this.driveFileId = eslesen.id;
+          this.fileName = eslesen.name;
+          this.kaynakTipi = 'drive';
+          this.imgEl = null;
+        } else if (this.secilen && this.secilen.drive_cover_id) {
+          this.driveFileId = this.secilen.drive_cover_id;
+          this.fileName = this.secilen.expected_cover || `kapak_${nStr}.jpg`;
+          this.kaynakTipi = 'drive';
+          this.imgEl = null;
+        } else {
+          this.driveFileId = '';
+          if (this.kaynakTipi === 'drive') this.fileName = '';
+        }
+      },
+      yerelTetikle() {
+        if (this.$refs.fileInput) this.$refs.fileInput.click();
       },
       dosyaSec(ev) {
         const file = ev.target.files && ev.target.files[0];
         if (!file) return;
-        if (!/^image\/(jpeg|png)$/.test(file.type)) {
-          this.s.notify('error', 'Sadece JPG veya PNG seç.');
+        if (!/^image\/(jpeg|png|webp)$/.test(file.type)) {
+          this.s.notify('error', 'Lütfen JPG, PNG veya WebP görseli seçin.');
           return;
         }
+        this.kaynakTipi = 'yerel';
+        this.driveFileId = '';
         this.fileName = file.name;
+        const mNum = file.name.match(/(\d+)/);
+        if (!this.no && mNum) this.no = mNum[1];
+
         const img = new Image();
         const reader = new FileReader();
         reader.onload = () => {
@@ -107,7 +160,7 @@
             this.imgH = img.naturalHeight;
             this.zoom = 1;
             this.offsetY = 0;
-            this.$nextTick(this.ciz);
+            this.$nextTick(() => this.ciz());
           };
           img.src = reader.result;
         };
@@ -117,23 +170,20 @@
         const cv = this.$refs.canvas;
         if (!cv || !this.imgEl) return;
         const { w, h } = this.hedef;
-        const canvas = cv;
-        canvas.width = w;
-        canvas.height = h;
-        const ctx = canvas.getContext('2d');
-        ctx.fillStyle = '#000';
+        cv.width = w;
+        cv.height = h;
+        const ctx = cv.getContext('2d');
+        ctx.fillStyle = '#07090d';
         ctx.fillRect(0, 0, w, h);
         const img = this.imgEl;
 
         if (this.mode === 'contain') {
-          /* Sığdır: hiç kırpma, siyah zemin */
           const k = Math.min(w / img.width, h / img.height) * this.zoom;
           const dw = img.width * k;
           const dh = img.height * k;
           ctx.drawImage(img, (w - dw) / 2, (h - dh) / 2 + this.offsetY * h, dw, dh);
           return;
         }
-        /* Kırp (cover): oranı koru, taşan kısmı kes */
         const k = Math.max(w / img.width, h / img.height) * this.zoom;
         const dw = img.width * k;
         const dh = img.height * k;
@@ -142,9 +192,9 @@
       oranUyari() {
         if (!this.imgEl) return '';
         const r = this.imgW / this.imgH;
-        const ideal = this.tip === 'short' ? 9 / 16 : 16 / 9;
+        const ideal = 9 / 16;
         if (Math.abs(r - ideal) < 0.03) return '';
-        return `Görsel oranı ${r.toFixed(2)} — hedef ${ideal.toFixed(2)}. Kırpma ile düzeltilecek.`;
+        return `Seçilen görsel oranı ${r.toFixed(2)} — 9:16 dikey Shorts oranına (${ideal.toFixed(2)}) otomatik kırpılıyor.`;
       },
       async yukle() {
         if (!this.hazir) return;
@@ -152,31 +202,30 @@
         this.sonuc = null;
         try {
           let path = '';
-          if (!this.driveFileId) {
+          if (!this.driveFileId && this.imgEl) {
             const cv = this.$refs.canvas;
             const b64 = cv.toDataURL('image/jpeg', 0.92).split(',')[1];
             path = `kapak_gelen/${this.dosyaAdiFor()}`;
             await this.s.commitBinary(
               path,
               b64,
-              `chore: panelden kapak eklendi (${this.dosyaAdiFor()}) [skip ci]`
+              `chore: panelden 9:16 Shorts kapagi eklendi (${this.dosyaAdiFor()}) [skip ci]`
             );
           }
 
-          /* Drive kapağı seçildiyse dosya telefona hiç indirilmez; worker ID ile alır. */
           const body = {
             ref: 'main',
             inputs: {
-              tip: this.tip,
+              tip: 'short',
               numara: String(this.no),
               dosya: path,
               drive_file_id: this.driveFileId || '',
-              video_id: this.videoId || '',
+              video_id: (this.videoId || '').trim(),
               temizle: this.temizle ? 'true' : 'false'
             }
           };
           await this.s.gh(`/repos/${this.s.repo}/actions/workflows/kapak-ekle.yml/dispatches`, { method: 'POST', body });
-          this.s.notify('success', 'Kapak kuyruğa alındı — 10-40 saniye içinde Drive ve YouTube güncellenir.');
+          this.s.notify('success', `${this.dosyaAdiFor()} işleme alındı — 15-40 sn içinde Drive ve YouTube güncellenir.`);
           setTimeout(() => this.izle(), 6000);
         } catch (e) {
           this.s.notify('error', 'Kapak yüklenemedi: ' + (e.message || e));
@@ -199,9 +248,9 @@
                 this.pollTimer = null;
                 this.sonuc = { durum: r.conclusion, url: r.html_url };
                 const txt = await this.s.getRawText('kapak_sonuc.json');
-                if (txt) { try { this.sonuc.detay = JSON.parse(txt); } catch (e) { /* yut */ } }
-                this.s.notify(r.conclusion === 'success' ? 'success' : 'error', 'Kapak işi bitti: ' + r.conclusion);
-                this.s.loadTelemetry && this.s.loadTelemetry();
+                if (txt) { try { this.sonuc.detay = JSON.parse(txt); } catch (e) { /* sessiz */ } }
+                this.s.notify(r.conclusion === 'success' ? 'success' : 'error', 'Kapak işlemi tamamlandı: ' + r.conclusion);
+                if (this.s.loadTelemetry) this.s.loadTelemetry(true);
               }
             } catch (e) { /* sessiz */ }
           }, 8000);
@@ -209,135 +258,192 @@
       }
     },
     mounted() {
-      if (!this.s.files || !this.s.files.uploaded) this.s.loadFiles && this.s.loadFiles();
+      if (!this.s.files || !this.s.files.uploaded) {
+        if (this.s.loadFiles) this.s.loadFiles();
+      }
+      // İlk hazır Shorts videosunu varsayılan seç ki dikey önizleme hemen dolu gelsin
+      const ilkHazir = this.kuyruk.find((x) => x.is_ready) || this.kuyruk[0];
+      if (ilkHazir && !this.no) {
+        this.no = String(ilkHazir.number);
+      }
     },
-    unmounted() {
+    beforeUnmount() {
       if (this.pollTimer) clearInterval(this.pollTimer);
     },
     template: `
       <div>
         <div class="page-head">
           <div>
-            <h2>Kapak Yükle</h2>
-            <p>Kapak hazır değildi ya da yanlış kapak gitti mi? Buradan seç, kırp, tek tıkla Drive'a yaz ve yayındaki videoya uygula. Studio'ya girmeye gerek yok.</p>
+            <h2>Kapak Yükle · 9:16 Shorts</h2>
+            <p>Kuyruktan Shorts videosunu seçtiğinde eşleşen <code>kapak_N.jpg</code> otomatik yüklenir; dilersen cihazdan yeni dikey kapak yükleyip kırpabilirsin.</p>
           </div>
           <div class="head-actions">
-            <el-button size="small" icon="Refresh" @click="s.loadTelemetry()">Kuyruğu yenile</el-button>
+            <el-button size="small" icon="Refresh" :loading="s.telemetryBusy" @click="s.loadTelemetry()">Drive listesini yenile</el-button>
           </div>
         </div>
 
         <div class="alert-strip ok" style="margin-bottom:14px">
-          <el-icon><InfoFilled /></el-icon>
-          <span>Kural hatırlatması: bot kapak <b>üretmez</b>, yalnızca Drive'da <b>tam adıyla</b> eşleşen kapağı kullanır
-            (<code>kapak_N.jpg</code> / <code>uzun_kapak_N.png</code>). Bu ekran o dosyayı doğru adla oluşturur.</span>
+          <el-icon><CircleCheckFilled /></el-icon>
+          <span>Yalnızca <b>9:16 dikey Shorts (1080×1920)</b> kapakları aktif. Video seçildiğinde Drive'daki <code>kapak_N.jpg</code> otomatik eşleşir.</span>
         </div>
 
         <div class="grid c2" style="gap:16px;align-items:start">
-          <!-- SOL: seçim -->
+          <!-- SOL: video & kapak seçimi -->
           <div class="card">
-            <h3 style="margin-top:0">1 · Video ve görsel</h3>
+            <div class="card-body">
+              <h3 style="margin:0 0 12px">1 · Shorts Videosu ve Kapak Kaynağı</h3>
 
-            <el-radio-group v-model="tip" size="small" style="margin-bottom:12px">
-              <el-radio-button label="short">Shorts (9:16)</el-radio-button>
-              <el-radio-button label="long">Uzun video (16:9)</el-radio-button>
-            </el-radio-group>
-
-            <el-select v-model="no" filterable clearable placeholder="Kuyruktan video seç" size="small" style="width:100%">
-              <el-option v-for="x in kuyruk.filter(i => i.type === tip)" :key="x.type + x.number"
-                :label="x.file_name + (x.is_published ? ' · yayınlandı' : ' · hazır')"
-                :value="String(x.number)">
-                <span>{{ x.file_name }}</span>
-                <span style="float:right;color:#8a8a8a;font-size:12px">
-                  {{ x.has_drive_cover ? 'kapak var' : 'kapak yok' }} · {{ x.is_published ? 'yayında' : 'sırada' }}
-                </span>
-              </el-option>
-            </el-select>
-
-            <div style="margin:12px 0">
-              <el-select v-model="driveFileId" filterable clearable placeholder="Drive'dan Kapak Seç" size="small" style="width:100%">
-                <el-option v-for="f in driveKapaklar" :key="f.id" :label="f.name" :value="f.id">
-                  <span>{{ f.name }}</span>
-                  <span style="float:right;color:#8a8a8a;font-size:12px">{{ bytes(f.size) }}</span>
+              <div style="font-size:12px;color:#606266;margin-bottom:5px;font-weight:600">Kuyruktan Shorts Seç</div>
+              <el-select v-model="no" filterable clearable placeholder="video_176.mp4 … video_196.mp4" style="width:100%;margin-bottom:12px">
+                <el-option v-for="x in kuyruk" :key="x.number"
+                  :label="x.file_name + ' — ' + (x.title || '').slice(0, 42)"
+                  :value="String(x.number)">
+                  <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+                    <span><b>{{ x.file_name }}</b> <span style="color:#909399;font-size:12px">{{ (x.title || '').slice(0, 34) }}</span></span>
+                    <el-tag size="small" :type="x.has_drive_cover ? 'success' : 'warning'" effect="plain">
+                      {{ x.has_drive_cover ? ('kapak_' + x.number + ' hazır') : 'kapak eksik' }}
+                    </el-tag>
+                  </div>
                 </el-option>
               </el-select>
-              <div v-if="fileName" style="font-size:12px;color:#67c23a;margin-top:6px">
-                Drive kapağı: {{ fileName }}
-              </div>
-              <div v-if="!driveKapaklar.length" style="font-size:12px;color:#e6a23c;margin-top:6px">
-                Drive kapak listesi boş. “Kuyruğu yenile”ye bas.
-              </div>
-            </div>
 
-            <div v-if="imgEl">
-              <div class="kv" style="font-size:12.5px;margin-bottom:6px">
-                <span>Kırpma</span>
-                <el-radio-group v-model="mode" size="small" @change="ciz">
-                  <el-radio-button label="cover">Kırp (doldur)</el-radio-button>
-                  <el-radio-button label="contain">Sığdır (siyah zemin)</el-radio-button>
-                </el-radio-group>
+              <div class="kv" style="margin-bottom:12px">
+                <span class="k">veya doğrudan video numarası</span>
+                <el-input v-model="no" size="small" placeholder="ör. 176" style="width:130px" clearable />
               </div>
-              <div class="kv" style="font-size:12.5px">
-                <span>Yakınlaştır</span>
-                <el-slider v-model="zoom" :min="1" :max="2.2" :step="0.02" style="width:180px" />
+
+              <div style="font-size:12px;color:#606266;margin-bottom:5px;font-weight:600">
+                Drive'daki Hazır Kapaklar ({{ driveKapaklar.length }} adet)
               </div>
-              <div class="kv" style="font-size:12.5px">
-                <span>Dikey kaydır</span>
-                <el-slider v-model="offsetY" :min="-0.45" :max="0.45" :step="0.01" style="width:180px" />
+              <el-select v-model="driveFileId" filterable clearable placeholder="Drive'dan kapak_N.jpg seç" style="width:100%;margin-bottom:10px">
+                <el-option v-for="f in driveKapaklar" :key="f.id" :label="f.name" :value="f.id">
+                  <span>{{ f.name }}</span>
+                  <span style="float:right;color:#909399;font-size:12px">{{ bytes(f.size) }}</span>
+                </el-option>
+              </el-select>
+
+              <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:10px 0 14px">
+                <input ref="fileInput" type="file" accept="image/jpeg,image/png,image/webp" style="display:none" @change="dosyaSec" />
+                <el-button size="small" icon="Upload" @click="yerelTetikle">Cihazdan Yeni Görsel Seç (JPG/PNG)</el-button>
+                <span v-if="fileName" style="font-size:12px;color:#67c23a;font-weight:600">
+                  ✓ Seçili: {{ fileName }} ({{ kaynakTipi === 'drive' ? 'Drive' : 'Cihaz' }})
+                </span>
               </div>
-              <div v-if="oranUyari()" style="font-size:12px;color:#e6a23c;margin-top:6px">{{ oranUyari() }}</div>
-            </div>
 
-            <h3 style="margin:18px 0 8px">2 · Uygulama</h3>
-            <div style="font-size:12.5px;color:#8a8a8a;margin-bottom:8px">
-              Drive'a yazılacak ad: <b>{{ no ? dosyaAdiFor() : '—' }}</b>
-            </div>
+              <div v-if="imgEl" style="background:#f8fafc;border:1px solid #ebeef5;border-radius:6px;padding:10px 12px;margin-bottom:14px">
+                <div class="kv" style="font-size:12.5px">
+                  <span>Yerleşim modu</span>
+                  <el-radio-group v-model="mode" size="small" @change="ciz">
+                    <el-radio-button label="cover">9:16 Doldur</el-radio-button>
+                    <el-radio-button label="contain">Sığdır</el-radio-button>
+                  </el-radio-group>
+                </div>
+                <div class="kv" style="font-size:12.5px">
+                  <span>Yakınlaştır</span>
+                  <el-slider v-model="zoom" :min="1" :max="2.2" :step="0.02" style="width:180px" />
+                </div>
+                <div class="kv" style="font-size:12.5px">
+                  <span>Dikey hizalama</span>
+                  <el-slider v-model="offsetY" :min="-0.45" :max="0.45" :step="0.01" style="width:180px" />
+                </div>
+                <div v-if="oranUyari()" style="font-size:12px;color:#e6a23c;margin-top:6px">{{ oranUyari() }}</div>
+              </div>
 
-            <el-checkbox v-model="temizle" style="display:block;margin-bottom:10px">
-              Aynı numaralı eski/artık kopyaları çöpe at <span style="color:#8a8a8a">(ör. kapak_155_yeni.jpg)</span>
-            </el-checkbox>
+              <h3 style="margin:16px 0 8px">2 · Hedef ve Uygulama</h3>
+              <div class="kv">
+                <span class="k">Drive hedef dosya adı</span>
+                <span class="v mono-sm">{{ no ? dosyaAdiFor() : '—' }}</span>
+              </div>
+              <div class="kv" v-if="secilen">
+                <span class="k">Video başlığı</span>
+                <span class="v" style="max-width:65%">{{ secilen.title || '—' }}</span>
+              </div>
 
-            <div class="kv" style="align-items:center">
-              <span>Video ID (yayındaki videoya hemen uygula)</span>
-              <el-input v-model="videoId" size="small" placeholder="boş bırakılırsa sadece Drive'a yazılır" style="width:260px" />
-            </div>
-            <div v-if="tahminiVideoId" style="font-size:12px;color:#67c23a;margin-top:4px">
-              uploaded.txt'ten bulundu: {{ tahminiVideoId }}
-            </div>
+              <el-checkbox v-model="temizle" style="display:block;margin:10px 0">
+                Aynı numaralı eski/mükerrer kapak kopyalarını temizle
+              </el-checkbox>
 
-            <div style="margin-top:16px">
-              <el-button type="primary" :disabled="!hazir" :loading="busy" @click="yukle">
-                Drive kapağını uygula
-              </el-button>
+              <div class="kv" style="align-items:center">
+                <span class="k">YouTube Video ID <small>(yayındaysa anında uygular)</small></span>
+                <el-input v-model="videoId" size="small" placeholder="Kuyruktaki video için boş bırakın" style="width:230px" clearable />
+              </div>
+              <div v-if="tahminiVideoId" style="font-size:12px;color:#67c23a;margin-top:4px">
+                Yayındaki video otomatik algılandı: <code>{{ tahminiVideoId }}</code>
+              </div>
+
+              <div style="margin-top:16px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+                <el-button type="primary" icon="Check" :disabled="!hazir" :loading="busy" @click="yukle">
+                  {{ videoId ? 'Drive + YouTube Kapağını Güncelle' : '9:16 Kapağı Drive Kuyruğuna Kaydet' }}
+                </el-button>
+                <el-button v-if="driveFileId" size="small" plain
+                  @click="openLink('https://drive.google.com/file/d/' + driveFileId + '/view')">
+                  Drive'da Aç
+                </el-button>
+              </div>
             </div>
           </div>
 
-          <!-- SAĞ: önizleme + sonuç -->
+          <!-- SAĞ: gerçek 9:16 DİKEY telefon önizleme çerçevesi -->
           <div class="card">
-            <h3 style="margin-top:0">Önizleme · {{ hedef.label }}</h3>
-            <div style="background:#0d1117;border-radius:10px;padding:10px;display:flex;justify-content:center">
-              <canvas ref="canvas" style="max-width:100%;max-height:420px;border-radius:6px"></canvas>
-            </div>
-            <div v-if="!imgEl" style="text-align:center;color:#8a8a8a;font-size:13px;padding:8px">
-              Görsel seçilince burada canlı önizleme çıkar.
-            </div>
-
-            <div v-if="sonuc" style="margin-top:16px">
-              <h3 style="margin:0 0 6px">Sonuç</h3>
-              <div :class="['alert-strip', sonuc.durum === 'success' ? 'ok' : 'warn']">
-                <el-icon><component :is="sonuc.durum === 'success' ? 'CircleCheckFilled' : 'WarningFilled'" /></el-icon>
-                <span>
-                  İş durumu: <b>{{ sonuc.durum }}</b>
-                  <template v-if="sonuc.detay">
-                    · {{ sonuc.detay.drive_ad }} · {{ sonuc.detay.boyut }}
-                  </template>
-                  <a :href="sonuc.url" target="_blank" style="margin-left:8px">log</a>
-                </span>
+            <div class="card-body" style="display:flex;flex-direction:column;align-items:center">
+              <div style="width:100%;display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+                <h3 style="margin:0">Dikey Önizleme · 9:16</h3>
+                <el-tag size="small" type="info" effect="plain">1080 × 1920 px</el-tag>
               </div>
-              <ul v-if="sonuc.detay && sonuc.detay.adimlar" style="font-size:12.5px;color:#b9b9b9;padding-left:18px">
-                <li v-for="(a, i) in sonuc.detay.adimlar" :key="i">{{ a }}</li>
-              </ul>
-              <div v-if="sonuc.detay && sonuc.detay.hata" style="color:#f56c6c;font-size:12.5px">
-                {{ sonuc.detay.hata }}
+
+              <!-- Dikey 9:16 Shorts Çerçevesi (asla yatay olmaz) -->
+              <div style="width:262px;aspect-ratio:9/16;background:#090d14;border:3px solid #263445;border-radius:18px;
+                          overflow:hidden;position:relative;display:flex;align-items:center;justify-content:center;
+                          box-shadow:0 12px 32px rgba(0,0,0,.22)">
+                <!-- Yerel görsel kırpma önizlemesi -->
+                <canvas v-show="Boolean(imgEl)" ref="canvas" style="width:100%;height:100%;object-fit:cover;display:block"></canvas>
+
+                <!-- Drive'daki hazır kapak önizlemesi -->
+                <img v-if="!imgEl && driveFileId && !driveThumbHata"
+                     :src="driveThumbUrl"
+                     :alt="fileName"
+                     @error="driveThumbHata = true"
+                     style="width:100%;height:100%;object-fit:cover;display:block" />
+
+                <!-- Oturum çerezi nedeniyle Drive küçük resmi engellenirse şık dikey bilgi kartı -->
+                <div v-if="!imgEl && driveFileId && driveThumbHata"
+                     style="padding:22px 18px;text-align:center;color:#e5eaf3;display:flex;flex-direction:column;align-items:center;gap:10px">
+                  <div style="border:1.5px solid #4fe3d0;color:#4fe3d0;border-radius:999px;padding:3px 12px;font-size:11px;letter-spacing:1.5px;font-weight:700">
+                    BİLGİ DOZU · 9:16
+                  </div>
+                  <div style="font-size:16px;font-weight:800;color:#ffd633;margin-top:6px">{{ fileName }}</div>
+                  <div style="font-size:12px;color:#a3b3c6;line-height:1.5">
+                    Drive'da eşleşen dikey Shorts kapağı hazır ({{ secilenDriveKapak ? bytes(secilenDriveKapak.size) : '' }}).
+                  </div>
+                  <el-button size="small" type="primary" plain
+                    @click="openLink('https://drive.google.com/file/d/' + driveFileId + '/view')">
+                    Görseli Tam Boyut Aç
+                  </el-button>
+                </div>
+
+                <!-- Henüz seçim yapılmadıysa -->
+                <div v-if="!imgEl && !driveFileId"
+                     style="padding:24px 18px;text-align:center;color:#8fa3b8;font-size:12.5px;line-height:1.6">
+                  Soldan bir <b>Shorts videosu</b> seçin veya cihazdan <b>9:16 dikey kapak</b> yükleyin.
+                </div>
+              </div>
+
+              <div v-if="secilen" style="margin-top:12px;text-align:center;font-size:12px;color:#606266">
+                <b>{{ secilen.file_name }}</b> · {{ secilen.has_drive_cover ? ('Eşleşen kapak: ' + (fileName || ('kapak_' + no + '.jpg'))) : 'Henüz Drive kapağı yok' }}
+              </div>
+
+              <div v-if="sonuc" style="width:100%;margin-top:16px">
+                <div :class="['alert-strip', sonuc.durum === 'success' ? 'ok' : 'warn']">
+                  <el-icon><component :is="sonuc.durum === 'success' ? 'CircleCheckFilled' : 'WarningFilled'" /></el-icon>
+                  <span>
+                    Sonuç: <b>{{ sonuc.durum === 'success' ? 'Başarılı' : sonuc.durum }}</b>
+                    <template v-if="sonuc.detay"> · {{ sonuc.detay.drive_ad }} · {{ sonuc.detay.boyut }}</template>
+                    <a :href="sonuc.url" target="_blank" style="margin-left:8px">işlem kaydı</a>
+                  </span>
+                </div>
+                <div v-if="sonuc.detay && sonuc.detay.hata" style="color:#f56c6c;font-size:12.5px;margin-top:4px">
+                  {{ sonuc.detay.hata }}
+                </div>
               </div>
             </div>
           </div>

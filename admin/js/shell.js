@@ -8,45 +8,39 @@
 
   const MENU = [
     {
-      title: 'Operasyon', icon: 'Monitor', children: [
-        { key: 'dashboard', title: 'Kontrol Paneli', icon: 'Odometer' },
+      title: 'Yayın & Kuyruk', icon: 'VideoCamera', children: [
+        { key: 'dashboard', title: 'Genel Bakış', icon: 'Odometer' },
+        { key: 'queue', title: 'Shorts Kuyruğu', icon: 'List' },
+        { key: 'kapak', title: 'Kapak Yükle (9:16)', icon: 'Picture' },
+        { key: 'excel', title: 'Ana Tablo (baslik.xlsx)', icon: 'Document' },
+        { key: 'drive', title: 'Drive Envanteri', icon: 'FolderOpened' }
+      ]
+    },
+    {
+      title: 'Üretim & Analitik', icon: 'MagicStick', children: [
         { key: 'uretim', title: 'Video Üretimi', icon: 'MagicStick' },
-        { key: 'runs', title: 'Çalıştırmalar', icon: 'VideoPlay' },
-        { key: 'workflows', title: 'İş Akışları', icon: 'Promotion' }
-      ]
-    },
-    {
-      title: 'İçerik', icon: 'Files', children: [
-        { key: 'queue', title: 'Video Kuyruğu', icon: 'List' },
-        { key: 'excel', title: 'Excel Tablo', icon: 'Document' },
-        { key: 'drive', title: 'Drive Envanteri', icon: 'FolderOpened' },
-        { key: 'kapak', title: 'Kapak Yükle', icon: 'Picture' },
-        { key: 'ses', title: 'Ses & Kredi', icon: 'Microphone' },
-        { key: 'api', title: 'API & Kota', icon: 'Coin' }
-      ]
-    },
-    {
-      title: 'Gözetim', icon: 'Aim', children: [
-        { key: 'workers', title: 'İşçiler & Uyarılar', icon: 'Cpu' },
-        { key: 'diagnostics', title: 'Hata & Onarım', icon: 'Tools' }
-      ]
-    },
-    {
-      title: 'Analitik', icon: 'DataAnalysis', children: [
         { key: 'analytics', title: 'YouTube Analitik', icon: 'DataLine' },
         { key: 'retention', title: 'Retansiyon Eğrileri', icon: 'TrendCharts' }
       ]
     },
     {
-      title: 'Sistem', icon: 'Setting', children: [
+      title: 'Otomasyon & Sistem', icon: 'Setting', children: [
+        { key: 'api', title: 'API & Kotalar', icon: 'Coin' },
+        { key: 'runs', title: 'Çalıştırmalar', icon: 'VideoPlay' },
+        { key: 'workflows', title: 'İş Akışları', icon: 'Promotion' },
+        { key: 'scheduler', title: 'Zamanlayıcı (19:30)', icon: 'Timer' },
         { key: 'guvenlik', title: 'Güvenlik & Şifre', icon: 'Lock' },
-        { key: 'scheduler', title: 'Zamanlayıcı & Cron', icon: 'Timer' },
         { key: 'system', title: 'Sistem Durumu', icon: 'InfoFilled' }
       ]
     }
   ];
 
-  const TITLES = {};
+  const EXTRA_TITLES = {
+    workers: { title: 'İşçiler & Uyarılar', group: 'Otomasyon & Sistem' },
+    diagnostics: { title: 'Kayıtlar & Kurtarma', group: 'Otomasyon & Sistem' }
+  };
+
+  const TITLES = Object.assign({}, EXTRA_TITLES);
   MENU.forEach((g) => g.children.forEach((c) => (TITLES[c.key] = { title: c.title, group: g.title })));
 
   const LoginView = {
@@ -196,7 +190,8 @@
             <el-icon v-if="isMobile" class="sidebar-close" @click="drawerOpen = false"><Close /></el-icon>
           </div>
           <div class="sidebar-scroll">
-            <el-menu :default-active="view" :collapse="menuCollapsed" unique-opened
+            <el-menu :default-active="view" :collapse="menuCollapsed"
+                     :default-openeds="['Yayın & Kuyruk', 'Üretim & Analitik', 'Otomasyon & Sistem']"
                      background-color="#304156" text-color="#bfcbd9" active-text-color="#409eff" @select="select">
               <el-sub-menu v-for="g in menu" :key="g.title" :index="g.title">
                 <template #title>

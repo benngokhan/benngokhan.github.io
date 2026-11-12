@@ -1,7 +1,6 @@
 /* ============================================================================
-   Bilgi Dozu · Video Üretimi — detaylı üretim ekranı
-   Konu + sahne sayısı + süre hedefi verilir, motor (motor-uret.yml) çalıştırılır,
-   adımlar canlı izlenir. Şablon sabittir; buradan stil değiştirilemez.
+   Bilgi Dozu · Video Üretimi — MİRA v2.2 + Charon TTS + Pexels üretim stüdyosu
+   Üst şeritteki tüm API kartlarında gerçek yeşil kalan kota çubukları bulunur.
    ========================================================================== */
 (function () {
   'use strict';
@@ -36,10 +35,10 @@
       return {
         s: store,
         konu: '',
-        sahne: 4,
-        sureTipi: '38-42',
+        sahne: 7,
+        sureTipi: '38-45',
         sureMin: 38,
-        sureMax: 42,
+        sureMax: 45,
         kuru: false,
         gonderiyor: false,
         ayarlar: null,
@@ -54,6 +53,8 @@
         oneriler: ONERILER,
         oneriMeta: '',
         apiDurum: null,
+        apiTelemetri: null,
+        apiDurumBusy: false,
         apiDurumHata: '',
         driveLink: DRIVE_ONAY
       };
@@ -66,50 +67,111 @@
         return this.konu.trim().length >= 8 && !this.gonderiyor && !this.calisan;
       },
       sesOzeti() {
-        if (!this.ayarlar) return '—';
+        if (!this.ayarlar) return 'gemini · Charon';
         const ses = this.ayarlar.ses || {};
-        return `${ses.saglayici || '?'} · ${ses.voice_id || '?'} · ${ses.model || ses.model_id || '?'}`;
+        return `${ses.saglayici || 'gemini'} · ${ses.voice_id || 'Charon'} · ${ses.model || ses.model_id || 'gemini-2.5-flash-preview-tts'}`;
       },
       gorselOzeti() {
-        if (!this.ayarlar) return '—';
+        if (!this.ayarlar) return 'pexels · 1080px+ dikey';
         const g = this.ayarlar.gorsel || {};
-        return `${g.kaynak || '?'} · ${g.min_genislik || 1080}px+`;
+        return `${g.kaynak || 'pexels'} · ${g.min_genislik || 1080}px+ sinematik`;
       },
       tahminiKarakter() {
-        // kaba: sahne başına ~110 karakter
-        return this.sahne * 110;
+        return this.sahne * 105;
+      },
+      apiKartlari() {
+        const d = this.apiDurum || {};
+        const telServisler = (this.apiTelemetri && this.apiTelemetri.servisler) || [];
+        const bulTel = (anahtar) => telServisler.find((s) => s.ad.toLowerCase().includes(anahtar)) || null;
+
+        const kartYap = (baslik, alt, durumObj, telAd, varsayilanLimit, birim) => {
+          const x = durumObj || {};
+          const t = bulTel(telAd);
+          const l = x.limit || {};
+          let kalan = Number(l['remaining-requests'] ?? l['remaining'] ?? (t ? t.kalan : NaN));
+          let toplam = Number(l['limit-requests'] ?? l['limit'] ?? (t ? t.limit : varsayilanLimit));
+          if (!isFinite(toplam) || toplam <= 0) toplam = varsayilanLimit;
+          if (!isFinite(kalan)) kalan = x.durum === 'aktif' ? toplam : 0;
+          const yuzde = Math.max(0, Math.min(100, (kalan / toplam) * 100));
+          const aktif = x.durum === 'aktif' || (!x.durum && t && t.durum === 'ok');
+          const renk = !aktif ? '#f56c6c' : (yuzde <= 15 ? '#f56c6c' : (yuzde <= 30 ? '#e6a23c' : '#67c23a'));
+          return {
+            baslik,
+            alt,
+            aktif,
+            durumEtiket: aktif ? `Aktif · HTTP ${x.http || 200}` : (x.durum === 'kota' ? 'Kota Dolu' : `Kontrol · HTTP ${x.http || '—'}`),
+            tagTip: aktif ? 'success' : (x.durum === 'kota' ? 'warning' : 'danger'),
+            kalan,
+            toplam,
+            birim: l.birim || (t && t.birim) || birim,
+            yuzde,
+            renk,
+            mesaj: (!aktif && x.mesaj) ? x.mesaj : ''
+          };
+        };
+
+        return [
+          kartYap('Gemini · Charon', 'TTS seslendirme + yardımcı metin', d.gemini, 'gemini', 1500, 'istek/gün'),
+          kartYap('Pexels · Sinematik Görsel', 'Birincil 9:16 dikey sahne görseli', d.pexels, 'pexels', 25000, 'istek/ay'),
+          kartYap('Groq · Hızlı Metin Motoru', 'Senaryo, başlık ve kapak metni', d.groq, 'groq', 1000, 'istek/gün')
+        ];
       }
     },
     methods: {
+      ADIM_IKON_BUL(s) { return ADIM_IKON[s] || 'MoreFilled'; },
+      sayi(v) { return Number(v || 0).toLocaleString('tr-TR'); },
       sureSec(tip) {
         this.sureTipi = tip;
-        if (tip === '38-42') { this.sureMin = 38; this.sureMax = 42; }
-        if (tip === '50-58') { this.sureMin = 50; this.sureMax = 58; }
+        if (tip === '38-45') { this.sureMin = 38; this.sureMax = 45; }
+        if (tip === '46-55') { this.sureMin = 46; this.sureMax = 55; }
       },
       oneriSec(t) { this.konu = typeof t === 'string' ? t : t.title; },
       async apiDurumuYukle() {
         try {
-          const v = await this.s.gh(`/repos/${SAHIP}/${DEPO}/contents/api_durum.json?ref=main`);
-          const metin = decodeURIComponent(escape(atob((v.content || '').replace(/\n/g, ''))));
-          this.apiDurum = JSON.parse(metin); this.apiDurumHata = '';
-        } catch (e) { this.apiDurumHata = 'API durumu henüz ölçülmedi'; }
+          const [txtDurum, txtTel] = await Promise.all([
+            this.s.getRawText('api_durum.json'),
+            this.s.getRawText('api_telemetri.json')
+          ]);
+          if (txtDurum) this.apiDurum = JSON.parse(txtDurum);
+          if (txtTel) this.apiTelemetri = JSON.parse(txtTel);
+          this.apiDurumHata = '';
+        } catch (e) {
+          this.apiDurumHata = 'API durumu okunamadı: ' + (e.message || e);
+        }
       },
-      apiRenk(x) { return x && x.durum === 'aktif' ? 'success' : (x && x.durum === 'kota' ? 'warning' : 'danger'); },
-      apiMetin(x) {
-        if (!x) return 'Ölçülmedi';
-        const l=x.limit||{};
-        const kalan=l['remaining-requests'] || l['remaining-tokens'];
-        const toplam=l['limit-requests'] || l['limit-tokens'];
-        return `${x.durum === 'aktif' ? 'Aktif' : (x.durum === 'kota' ? 'Kota dolu' : 'Hata')} · HTTP ${x.http || '—'}${kalan ? ' · kalan '+kalan+(toplam ? '/'+toplam : '') : ''}`;
+      async canliApiOlc() {
+        this.apiDurumBusy = true;
+        const onceki = this.apiDurum && this.apiDurum.guncellendi;
+        try {
+          await this.s.gh(`/repos/${SAHIP}/${DEPO}/actions/workflows/api-durum.yml/dispatches`, {
+            method: 'POST',
+            body: { ref: 'main' }
+          });
+          this.s.notify('info', 'Canlı API kontrolü başlatıldı (~25 sn)…');
+          for (let i = 0; i < 8; i++) {
+            await new Promise((r) => setTimeout(r, 5000));
+            await this.apiDurumuYukle();
+            if (this.apiDurum && this.apiDurum.guncellendi !== onceki) {
+              this.s.notify('success', 'API durum ve kotaları güncellendi.');
+              break;
+            }
+          }
+        } catch (e) {
+          this.s.notify('error', 'Canlı ölçüm başlatılamadı: ' + (e.message || e));
+        } finally {
+          this.apiDurumBusy = false;
+        }
       },
       async onerileriYukle() {
         try {
-          const v = await this.s.gh(`/repos/${SAHIP}/${DEPO}/contents/konu_onerileri.json?ref=main`);
-          const metin = decodeURIComponent(escape(atob((v.content || '').replace(/\n/g, ''))));
-          const j = JSON.parse(metin);
-          this.oneriler = (j.suggestions || []).map(x => x.title);
-          this.oneriMeta = `${j.method || 'Analizli öneriler'} · ${j.used_count || 0} geçmiş kayıt kontrol edildi`;
-        } catch (e) { this.oneriMeta = 'Yedek öneriler'; }
+          const txt = await this.s.getRawText('konu_onerileri.json');
+          if (!txt) return;
+          const j = JSON.parse(txt);
+          if (j.suggestions && j.suggestions.length) {
+            this.oneriler = j.suggestions.map((x) => x.title);
+            this.oneriMeta = `${j.method || 'Kanal analizli öneriler'} · ${j.used_count || 0} geçmiş video tarandı`;
+          }
+        } catch (e) { this.oneriMeta = ''; }
       },
       durumEtiketi(k) {
         if (k.status === 'in_progress') return 'Üretiliyor';
@@ -147,9 +209,8 @@
       },
       async ayarlariYukle() {
         try {
-          const v = await this.s.gh(`/repos/${SAHIP}/${DEPO}/contents/motor/ayarlar.json?ref=main`);
-          const metin = decodeURIComponent(escape(atob((v.content || '').replace(/\n/g, ''))));
-          this.ayarlar = JSON.parse(metin);
+          const txt = await this.s.getRawText('motor/ayarlar.json');
+          if (txt) this.ayarlar = JSON.parse(txt);
           this.ayarHata = '';
         } catch (e) {
           this.ayarHata = 'Ayarlar okunamadı: ' + e.message;
@@ -194,7 +255,7 @@
             `/repos/${SAHIP}/${DEPO}/actions/workflows/${IS_AKISI}/dispatches`,
             { method: 'POST', body: { ref: 'main', inputs: girdiler } }
           );
-          this.s.notify('success', 'Üretim başlatıldı. Bittiğinde Drive "Onay Bekleyen Videolar" klasörüne düşer.');
+          this.s.notify('success', 'Üretim başlatıldı! Tamamlanınca video + 9:16 standart kapak Drive Onay Bekleyen klasörüne düşer.');
           this.konu = '';
           setTimeout(() => this.yukle(true), 5000);
         } catch (e) {
@@ -218,33 +279,66 @@
     template: `
       <div class="page">
         <el-alert type="info" :closable="false" show-icon style="margin-bottom:16px"
-          title="Şablon sabittir: 1080x1920 · 60 fps · üst başlık beyaz+sarı · karaoke altyazı · TAKİP ET butonu">
+          title="Kilitli Şablon: 1080×1920 Shorts · MİRA v2.2 + 3B Kapanış Kartı · Charon Ses · Standart Bilgi Dozu Kapak">
           <div style="line-height:1.6">
-            Buradan yalnızca <b>konu</b> ve <b>üretim ayarları</b> değişir; görünüm değişmez.
-            Video bitince <a :href="driveLink" target="_blank">Drive · Onay Bekleyen Videolar</a> klasörüne düşer.
+            Üretilen video ve <code>kapak_176..196</code> standardındaki 9:16 kapak otomatik olarak
+            <a :href="driveLink" target="_blank"><b>Drive · Onay Bekleyen Videolar</b></a> klasörüne yüklenir.
           </div>
         </el-alert>
 
+        <!-- ÜST ŞERİT: Her API kartında Drive tarzı yeşil kalan kota çubuğu -->
         <el-card shadow="never" style="margin-bottom:16px">
-          <template #header><b>API anlık durumu ve limitleri</b></template>
+          <template #header>
+            <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+              <b>API Anlık Durumu ve Kalan Kotalar</b>
+              <div style="display:flex;gap:8px;align-items:center">
+                <span style="font-size:11.5px;color:#909399" v-if="apiDurum && apiDurum.guncellendi">
+                  Son ölçüm: {{ new Date(apiDurum.guncellendi).toLocaleString('tr-TR') }}
+                </span>
+                <el-button size="small" icon="Refresh" @click="apiDurumuYukle">Oku</el-button>
+                <el-button size="small" type="primary" plain :loading="apiDurumBusy" @click="canliApiOlc">Canlı Ölç</el-button>
+              </div>
+            </div>
+          </template>
+
           <el-row :gutter="12">
-            <el-col :xs="24" :sm="8"><div style="padding:12px;border:1px solid #ebeef5;border-radius:8px"><b>Gemini · Charon</b><br><el-tag style="margin-top:8px" :type="apiRenk(apiDurum && apiDurum.gemini)">{{ apiMetin(apiDurum && apiDurum.gemini) }}</el-tag><div style="font-size:11px;color:#909399;margin-top:7px" v-if="apiDurum && apiDurum.gemini && apiDurum.gemini.mesaj">{{ apiDurum.gemini.mesaj }}</div></div></el-col>
-            <el-col :xs="24" :sm="8"><div style="padding:12px;border:1px solid #ebeef5;border-radius:8px"><b>Pexels · sinematik görsel</b><br><el-tag style="margin-top:8px" :type="apiRenk(apiDurum && apiDurum.pexels)">{{ apiMetin(apiDurum && apiDurum.pexels) }}</el-tag><div style="font-size:11px;color:#909399;margin-top:7px" v-if="apiDurum && apiDurum.pexels && apiDurum.pexels.mesaj">{{ apiDurum.pexels.mesaj }}</div></div></el-col>
-            <el-col :xs="24" :sm="8"><div style="padding:12px;border:1px solid #ebeef5;border-radius:8px"><b>Groq · hızlı metin motoru</b><br><el-tag style="margin-top:8px" :type="apiRenk(apiDurum && apiDurum.groq)">{{ apiMetin(apiDurum && apiDurum.groq) }}</el-tag><div style="font-size:11px;color:#909399;margin-top:7px" v-if="apiDurum && apiDurum.groq && apiDurum.groq.mesaj">{{ apiDurum.groq.mesaj }}</div></div></el-col>
+            <el-col :xs="24" :sm="8" v-for="k in apiKartlari" :key="k.baslik" style="margin-bottom:8px">
+              <div style="padding:12px 14px;border:1px solid #ebeef5;border-radius:8px;background:#fcfcfd;height:100%">
+                <div style="display:flex;justify-content:space-between;align-items:center;gap:6px">
+                  <b style="font-size:13.5px">{{ k.baslik }}</b>
+                  <el-tag size="small" :type="k.tagTip" effect="light">{{ k.durumEtiket }}</el-tag>
+                </div>
+                <div style="font-size:11.5px;color:#909399;margin-top:2px">{{ k.alt }}</div>
+
+                <div style="font-size:15px;font-weight:700;margin-top:8px;color:#303133">
+                  {{ sayi(k.kalan) }} / {{ sayi(k.toplam) }} <span style="font-size:11.5px;font-weight:400;color:#909399">{{ k.birim }}</span>
+                </div>
+
+                <!-- Yeşil kalan kota çubuğu -->
+                <div style="display:flex;align-items:center;gap:8px;margin-top:6px">
+                  <div style="flex:1;height:8px;background:#ebeef5;border-radius:4px;overflow:hidden">
+                    <div :style="{ width: k.yuzde + '%', height:'100%', background: k.renk, borderRadius:'4px', transition:'width .35s' }"></div>
+                  </div>
+                  <span :style="{ fontSize:'11.5px', fontWeight:700, color: k.renk, minWidth:'58px', textAlign:'right' }">
+                    %{{ k.yuzde.toFixed(0) }} kalan
+                  </span>
+                </div>
+
+                <div v-if="k.mesaj" style="font-size:11.5px;color:#f56c6c;margin-top:6px">{{ k.mesaj }}</div>
+              </div>
+            </el-col>
           </el-row>
-          <div style="font-size:11px;color:#909399;margin-top:10px">{{ apiDurum ? ('Son ölçüm: '+new Date(apiDurum.guncellendi).toLocaleString('tr-TR')+' · '+apiDurum.not) : apiDurumHata }}</div>
-          <el-button size="small" text type="primary" style="margin-top:6px" @click="apiDurumuYukle">Yenile</el-button>
         </el-card>
 
         <el-row :gutter="16">
           <el-col :xs="24" :lg="14">
             <el-card shadow="never">
-              <template #header><b>Üretim ayarları</b></template>
+              <template #header><b>Yeni Shorts Üretimi</b></template>
 
               <el-form label-position="top">
-                <el-form-item label="Konu (tek cümle)">
+                <el-form-item label="Konu / Merak Sorusu (tek cümle)">
                   <el-input v-model="konu" type="textarea" :rows="2" maxlength="160" show-word-limit
-                    placeholder="Örnek: Parmak uçların suda neden buruşur?" />
+                    placeholder="Örnek: Karanlıkta telefona bakınca neden geçici kör oluruz?" />
                   <div style="margin-top:8px;font-size:12px;color:#67c23a" v-if="oneriMeta">● {{ oneriMeta }}</div>
                   <div style="margin-top:8px">
                     <el-button v-for="o in oneriler" :key="o" size="small" plain
@@ -256,101 +350,89 @@
                   <el-col :xs="24" :sm="8">
                     <el-form-item label="Sahne sayısı">
                       <el-select v-model="sahne" style="width:100%">
-                        <el-option v-for="n in [4,5,6,7,8]" :key="n" :label="n + ' sahne'" :value="n" />
+                        <el-option v-for="n in [5,6,7,8]" :key="n" :label="n + ' sahne'" :value="n" />
                       </el-select>
                     </el-form-item>
                   </el-col>
-                  <el-col :xs="24" :sm="16">
-                    <el-form-item label="Süre hedefi">
-                      <el-radio-group v-model="sureTipi" @change="sureSec">
-                        <el-radio-button label="38-42">38-42 sn</el-radio-button>
-                        <el-radio-button label="50-58">50-58 sn</el-radio-button>
+                  <el-col :xs="24" :sm="10">
+                    <el-form-item label="Hedef süre">
+                      <el-radio-group v-model="sureTipi" @change="sureSec" style="width:100%">
+                        <el-radio-button label="38-45">38–45 sn (İdeal)</el-radio-button>
+                        <el-radio-button label="46-55">46–55 sn</el-radio-button>
                       </el-radio-group>
-                      <span style="margin-left:10px;color:#909399;font-size:12px">{{ sureMin }}-{{ sureMax }} sn</span>
+                    </el-form-item>
+                  </el-col>
+                  <el-col :xs="24" :sm="6">
+                    <el-form-item label="Mod">
+                      <el-checkbox v-model="kuru">Kuru test</el-checkbox>
                     </el-form-item>
                   </el-col>
                 </el-row>
 
-                <el-form-item label="Ses ve görsel (şablondan gelir, değiştirilemez)">
-                  <el-tag type="success" style="margin-right:8px">Ses: {{ sesOzeti }}</el-tag>
-                  <el-tag type="info">Görsel: {{ gorselOzeti }}</el-tag>
-                  <el-alert v-if="ayarHata" type="warning" :closable="false" :title="ayarHata" style="margin-top:8px" />
-                </el-form-item>
-
-                <el-form-item>
-                  <el-switch v-model="kuru" active-text="Deneme (Drive'a koyma, sadece üret)" />
-                </el-form-item>
-
-                <el-divider />
-                <div style="color:#909399;font-size:12px;margin-bottom:12px">
-                  Tahmini ses kullanımı: ~{{ tahminiKarakter }} karakter ·
-                  Süre: {{ sureMin }}-{{ sureMax }} sn · Render: 1080x1920 / 60 fps
+                <div style="background:#f8fafc;border:1px solid #ebeef5;border-radius:6px;padding:10px 12px;margin-bottom:14px;font-size:12.5px">
+                  <div class="kv"><span class="k">Ses motoru</span><span class="v">{{ sesOzeti }}</span></div>
+                  <div class="kv"><span class="k">Görsel motoru</span><span class="v">{{ gorselOzeti }}</span></div>
+                  <div class="kv"><span class="k">Tahmini metin hacmi</span><span class="v">~{{ tahminiKarakter }} karakter</span></div>
                 </div>
 
-                <el-button type="primary" size="large" :loading="gonderiyor" :disabled="!hazirMi" @click="uret">
-                  Üretimi başlat
-                </el-button>
-                <span v-if="calisan" style="margin-left:12px;color:#e6a23c">
-                  Bir video üretiliyor · {{ sureMetni(calisan) }}
-                </span>
+                <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+                  <el-button type="primary" size="large" icon="VideoPlay" :loading="gonderiyor" :disabled="!hazirMi" @click="uret">
+                    {{ calisan ? 'Üretim Devam Ediyor…' : 'Shorts Üretimini Başlat' }}
+                  </el-button>
+                  <el-button size="large" plain @click="kosuAc({ html_url: driveLink })">
+                    Onay Bekleyenler Klasörü
+                  </el-button>
+                </div>
               </el-form>
             </el-card>
           </el-col>
 
           <el-col :xs="24" :lg="10">
+            <el-card shadow="never" style="margin-bottom:16px">
+              <template #header>
+                <div style="display:flex;justify-content:space-between;align-items:center">
+                  <b>Canlı Üretim Adımları {{ aktifKosu ? ('#' + aktifKosu.run_number) : '' }}</b>
+                  <el-tag v-if="aktifKosu" size="small" :type="durumRengi(aktifKosu)">{{ durumEtiketi(aktifKosu) }}</el-tag>
+                </div>
+              </template>
+              <div v-if="!adimlar.length" class="empty-hint">Henüz aktif adım yok.</div>
+              <div v-else>
+                <div v-for="a in adimlar" :key="a.number"
+                     style="display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px dashed #f0f2f5;font-size:12.5px">
+                  <span>{{ a.number }}. {{ a.name }}</span>
+                  <el-tag size="small" :type="adimRengi(a)" effect="plain">
+                    {{ a.status === 'completed' ? (a.conclusion === 'success' ? 'tamam' : a.conclusion) : a.status }}
+                  </el-tag>
+                </div>
+              </div>
+            </el-card>
+
             <el-card shadow="never">
               <template #header>
                 <div style="display:flex;justify-content:space-between;align-items:center">
-                  <b>Canlı durum</b>
-                  <el-button v-if="aktifKosu" size="small" text type="primary" @click="kosuAc(aktifKosu)">Koşuyu aç</el-button>
+                  <b>Son Üretim Koşuları</b>
+                  <span style="font-size:11px;color:#909399">{{ sonYenileme }}</span>
                 </div>
               </template>
-              <div v-if="!aktifKosu" class="empty-hint">Henüz üretim yok.</div>
-              <div v-else>
-                <div style="margin-bottom:10px">
-                  <el-tag :type="durumRengi(aktifKosu)" size="small">{{ durumEtiketi(aktifKosu) }}</el-tag>
-                  <span style="margin-left:8px;color:#909399;font-size:12px">
-                    #{{ aktifKosu.run_number }} · {{ sureMetni(aktifKosu) }} · {{ tarih(aktifKosu) }}
-                  </span>
-                </div>
-                <el-steps direction="vertical" :active="adimlar.filter(a => a.conclusion === 'success').length" space="46px">
-                  <el-step v-for="a in adimlar" :key="a.number" :title="a.name"
-                    :status="a.status === 'in_progress' ? 'process' : (a.conclusion === 'success' ? 'success' : (a.conclusion === 'failure' ? 'error' : 'wait'))" />
-                </el-steps>
-              </div>
+              <el-table :data="kosular.slice(0, 6)" size="small" style="width:100%" @row-click="kosuAc">
+                <el-table-column label="#" width="58">
+                  <template #default="{ row }"><span class="mono-sm">#{{ row.run_number }}</span></template>
+                </el-table-column>
+                <el-table-column label="Durum" width="95">
+                  <template #default="{ row }">
+                    <el-tag size="small" :type="durumRengi(row)">{{ durumEtiketi(row) }}</el-tag>
+                  </template>
+                </el-table-column>
+                <el-table-column label="Tarih">
+                  <template #default="{ row }"><span class="mono-sm">{{ tarih(row) }}</span></template>
+                </el-table-column>
+                <el-table-column label="Süre" width="84">
+                  <template #default="{ row }"><span class="mono-sm">{{ sureMetni(row) }}</span></template>
+                </el-table-column>
+              </el-table>
             </el-card>
           </el-col>
         </el-row>
-
-        <el-card shadow="never" style="margin-top:16px">
-          <template #header>
-            <div style="display:flex;justify-content:space-between;align-items:center">
-              <b>Son üretimler</b>
-              <span style="font-size:12px;color:#909399">
-                {{ sonYenileme ? 'Yenilendi: ' + sonYenileme : '' }}
-                <el-button size="small" text :loading="yukleniyor" @click="yukle()">Yenile</el-button>
-              </span>
-            </div>
-          </template>
-          <el-alert v-if="hata" type="error" :closable="false" :title="hata" style="margin-bottom:12px" />
-          <el-table :data="kosular" size="small" empty-text="Henüz üretim yok">
-            <el-table-column label="Durum" width="110">
-              <template #default="p"><el-tag :type="durumRengi(p.row)" size="small">{{ durumEtiketi(p.row) }}</el-tag></template>
-            </el-table-column>
-            <el-table-column label="Tarih" width="130">
-              <template #default="p">{{ tarih(p.row) }}</template>
-            </el-table-column>
-            <el-table-column label="Süre" width="90">
-              <template #default="p">{{ sureMetni(p.row) }}</template>
-            </el-table-column>
-            <el-table-column label="Konu">
-              <template #default="p">{{ p.row.display_title || p.row.name }}</template>
-            </el-table-column>
-            <el-table-column width="80" align="right">
-              <template #default="p"><el-button size="small" text type="primary" @click="kosuAc(p.row)">Aç</el-button></template>
-            </el-table-column>
-          </el-table>
-        </el-card>
       </div>
     `
   };

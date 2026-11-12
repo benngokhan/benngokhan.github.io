@@ -144,10 +144,10 @@
                   </el-tag>
                 </template>
               </el-table-column>
-              <el-table-column label="Durum" width="112">
+              <el-table-column label="Durum" width="154">
                 <template #default="{ row }">
-                  <el-tag size="small" :type="row.is_published ? 'success' : (row.is_ready ? 'warning' : 'info')" effect="light">
-                    {{ row.is_published ? 'YÜKLENDİ' : row.status }}
+                  <el-tag size="small" :type="String(row.status || '').toUpperCase().includes('PLANLANDI') ? 'primary' : (row.is_published ? 'success' : (row.is_ready ? 'warning' : 'info'))" effect="light">
+                    {{ String(row.status || '').toUpperCase().includes('PLANLANDI') ? row.status : (row.is_published ? 'YÜKLENDİ' : row.status) }}
                   </el-tag>
                 </template>
               </el-table-column>

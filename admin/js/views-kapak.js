@@ -108,6 +108,7 @@
     },
     methods: {
       bytes,
+      openLink(u) { if (u) window.open(u, '_blank', 'noopener'); },
       dosyaAdiFor() {
         return `kapak_${this.no}.jpg`;
       },

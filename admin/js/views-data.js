@@ -8,6 +8,8 @@
   const ui = window.BD.ui;
 
   const coverNameFor = (item) => item.expected_cover || (item.type === 'long' ? `uzun_kapak_${item.number}.png` : `kapak_${item.number}.jpg`);
+  const openLink = (u) => { if (u) window.open(u, '_blank', 'noopener'); };
+  const goTo = (p) => { location.hash = '#/' + String(p || '').replace(/^#?\/?/, ''); };
 
   /* ============================ VİDEO KUYRUĞU ========================== */
   VIEWS.queue = {
@@ -47,7 +49,7 @@
       }
     },
     methods: {
-      coverNameFor,
+      coverNameFor, openLink, goTo,
       async lock(item) {
         try {
           await ElementPlus.ElMessageBox.confirm(
@@ -415,7 +417,7 @@
       missingCovers() { return this.coverMatrix.filter((x) => !x.hasCover); }
     },
     methods: {
-      bytes, ago, trTime,
+      bytes, ago, trTime, openLink, goTo,
       folderLink(id) { return 'https://drive.google.com/drive/folders/' + id; },
       fileLink(f) {
         if (f.mimeType && f.mimeType.indexOf('folder') >= 0) return 'https://drive.google.com/drive/folders/' + f.id;
@@ -725,7 +727,7 @@
       }
     },
     methods: {
-      ago, trTime, ui, dur, runDuration,
+      ago, trTime, ui, dur, runDuration, openLink, goTo,
       async saveForce() {
         try {
           await this.s.writeForceNext(this.forceDraft.trim());

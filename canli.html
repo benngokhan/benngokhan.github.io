@@ -239,16 +239,16 @@ function vgrad(x, y0, y1, c0, c1){
 }
 
 /* ═══════════════════════════════════════════════════════════════════
-   SES · ofis uğultusu + sakin fon müziği + hafif evrak hışırtısı
+   SES · yumuşak ofis uğultusu + koyu sakin fon + hafif evrak hışırtısı
    Tarayıcı kuralı gereği ilk dokunuştan sonra başlar.
    ═══════════════════════════════════════════════════════════════════ */
 const SES = (function(){
   const AC = window.AudioContext || window.webkitAudioContext || null;
   const CHORDS = [
-    [110.00, 164.81, 220.00, 261.63, 329.63],
-    [87.31, 130.81, 174.61, 220.00, 261.63],
-    [65.41, 130.81, 196.00, 246.94, 329.63],
-    [98.00, 146.83, 196.00, 246.94, 293.66]
+    [55.00, 82.41, 110.00, 164.81, 196.00],
+    [49.00, 73.42, 98.00, 146.83, 174.61],
+    [43.65, 65.41, 87.31, 130.81, 164.81],
+    [58.27, 87.31, 116.54, 174.61, 220.00]
   ];
   let ctx = null, master = null, wetIn = null, noise = null;
   let padGain = null, padOsc = [], chordIdx = 0, chordTimer = null;
@@ -295,19 +295,19 @@ const SES = (function(){
 
     noise = makeNoise();
 
-    // yumuşak ped: 5 ses, akorlar arasında kayarak geçiş
-    padGain = ctx.createGain(); padGain.gain.value = 0.5;
-    const lp = ctx.createBiquadFilter(); lp.type = "lowpass"; lp.frequency.value = 1050; lp.Q.value = 0.5;
+    // koyu ped: sadece sine, tiz harmoniği yok — uzun yumuşak geçiş
+    padGain = ctx.createGain(); padGain.gain.value = 0.42;
+    const lp = ctx.createBiquadFilter(); lp.type = "lowpass"; lp.frequency.value = 620; lp.Q.value = 0.4;
     padGain.connect(lp); lp.connect(master);
-    const send = ctx.createGain(); send.gain.value = 0.45; lp.connect(send); send.connect(rev);
+    const send = ctx.createGain(); send.gain.value = 0.25; lp.connect(send); send.connect(rev);
 
     CHORDS[0].forEach((f, i) => {
       const o = ctx.createOscillator();
-      o.type = i === 0 ? "sine" : "triangle";
+      o.type = "sine";
       o.frequency.value = f;
-      o.detune.value = (Math.random() * 8 - 4);
+      o.detune.value = (Math.random() * 4 - 2);
       const g = ctx.createGain();
-      g.gain.value = i === 0 ? 0.07 : 0.032;
+      g.gain.value = i === 0 ? 0.085 : 0.022;
       o.connect(g); g.connect(padGain);
       o.start();
       padOsc.push(o);
@@ -321,15 +321,15 @@ const SES = (function(){
     chordIdx = (chordIdx + 1) % CHORDS.length;
     const t = ctx.currentTime;
     CHORDS[chordIdx].forEach((f, i) => {
-      padOsc[i].frequency.setTargetAtTime(f, t, 1.6);
+      padOsc[i].frequency.setTargetAtTime(f, t, 3.6);
     });
-    chordTimer = setTimeout(nextChord, 8200);
+    chordTimer = setTimeout(nextChord, 14000);
   }
 
   function voice(t, vol, freq){
     const src = ctx.createBufferSource(); src.buffer = noise;
     const bp = ctx.createBiquadFilter(); bp.type = "bandpass";
-    bp.frequency.value = freq; bp.Q.value = 6.5;
+    bp.frequency.value = freq; bp.Q.value = 3.2;
     const g = ctx.createGain();
     const dur = 0.07 + Math.random() * 0.09;
     g.gain.setValueAtTime(0.0001, t);
@@ -355,10 +355,10 @@ const SES = (function(){
       const n = 1 + Math.floor(Math.random() * 3);
       let t = t0;
       for (let i = 0; i < n; i++){
-        voice(t, 0.035 + Math.random() * 0.02, 360 + Math.random() * 520);
-        t += 0.09 + Math.random() * 0.13;
+        voice(t, 0.020 + Math.random() * 0.012, 250 + Math.random() * 210);
+        t += 0.13 + Math.random() * 0.17;
       }
-      chatTimer = setTimeout(run, 1500 + Math.random() * 3000);
+      chatTimer = setTimeout(run, 2600 + Math.random() * 4200);
     };
     chatTimer = setTimeout(run, 800);
   }
@@ -369,46 +369,32 @@ const SES = (function(){
     const keys = () => {
       if (!on) return;
       const t0 = ctx.currentTime + 0.02;
-      const n = 2 + Math.floor(Math.random() * 4);
+      const n = 1 + Math.floor(Math.random() * 3);
       for (let i = 0; i < n; i++){
-        const t = t0 + i * (0.05 + Math.random() * 0.09);
+        const t = t0 + i * (0.08 + Math.random() * 0.12);
         const src = ctx.createBufferSource(); src.buffer = noise;
-        const hp = ctx.createBiquadFilter(); hp.type = "highpass"; hp.frequency.value = 2400;
+        const lp = ctx.createBiquadFilter(); lp.type = "lowpass"; lp.frequency.value = 1300;
         const g = ctx.createGain();
         g.gain.setValueAtTime(0.0001, t);
-        g.gain.linearRampToValueAtTime(0.016, t + 0.004);
-        g.gain.exponentialRampToValueAtTime(0.0004, t + 0.035);
-        src.connect(hp); hp.connect(g); g.connect(master);
-        src.start(t); src.stop(t + 0.05);
+        g.gain.linearRampToValueAtTime(0.008, t + 0.008);
+        g.gain.exponentialRampToValueAtTime(0.0004, t + 0.06);
+        src.connect(lp); lp.connect(g); g.connect(master);
+        src.start(t); src.stop(t + 0.08);
       }
-      clickTimer = setTimeout(keys, 4200 + Math.random() * 6800);
+      clickTimer = setTimeout(keys, 6500 + Math.random() * 9000);
     };
-    const clink = () => {
-      if (!on) return;
-      const t = ctx.currentTime + 0.1;
-      const o = ctx.createOscillator(); o.type = "sine";
-      o.frequency.value = 1250 + Math.random() * 500;
-      const g = ctx.createGain();
-      g.gain.setValueAtTime(0.0001, t);
-      g.gain.linearRampToValueAtTime(0.014, t + 0.01);
-      g.gain.exponentialRampToValueAtTime(0.0004, t + 0.45);
-      o.connect(g); g.connect(master); g.connect(wetIn);
-      o.start(t); o.stop(t + 0.5);
-      clinkTimer = setTimeout(clink, 12000 + Math.random() * 14000);
-    };
-    clickTimer = setTimeout(keys, 2500);
-    clinkTimer = setTimeout(clink, 9000);
+    clickTimer = setTimeout(keys, 3500);
   }
 
   function startMurmur(){
     const src = ctx.createBufferSource();
     src.buffer = noise; src.loop = true;
     const bp = ctx.createBiquadFilter(); bp.type = "bandpass";
-    bp.frequency.value = 480; bp.Q.value = 0.7;
-    const lp = ctx.createBiquadFilter(); lp.type = "lowpass"; lp.frequency.value = 1500;
-    const g = ctx.createGain(); g.gain.value = 0.05;
-    const lfo = ctx.createOscillator(); lfo.frequency.value = 0.07;
-    const lg = ctx.createGain(); lg.gain.value = 0.022;
+    bp.frequency.value = 380; bp.Q.value = 0.6;
+    const lp = ctx.createBiquadFilter(); lp.type = "lowpass"; lp.frequency.value = 1100;
+    const g = ctx.createGain(); g.gain.value = 0.038;
+    const lfo = ctx.createOscillator(); lfo.frequency.value = 0.055;
+    const lg = ctx.createGain(); lg.gain.value = 0.014;
     lfo.connect(lg); lg.connect(g.gain);
     src.connect(bp); bp.connect(lp); lp.connect(g);
     g.connect(master);
@@ -440,8 +426,8 @@ const SES = (function(){
       if (ctx.state === "suspended") ctx.resume();
       on = true;
       master.gain.cancelScheduledValues(ctx.currentTime);
-      master.gain.setTargetAtTime(0.5, ctx.currentTime, 0.9);
-      if (!chordTimer) chordTimer = setTimeout(nextChord, 8200);
+      master.gain.setTargetAtTime(0.42, ctx.currentTime, 1.2);
+      if (!chordTimer) chordTimer = setTimeout(nextChord, 14000);
       startChatter(); startClicks();
       store.write("1");
       sync();
@@ -465,27 +451,24 @@ const SES = (function(){
   function chime(){
     if (!on || !ctx) return;
     const t = ctx.currentTime;
-    [783.99, 1046.5].forEach((f, i) => {
-      const o = ctx.createOscillator(); o.type = "sine"; o.frequency.value = f;
-      const g = ctx.createGain();
-      const ts = t + i * 0.085;
-      g.gain.setValueAtTime(0.0001, ts);
-      g.gain.linearRampToValueAtTime(0.028, ts + 0.02);
-      g.gain.exponentialRampToValueAtTime(0.0004, ts + 0.75);
-      o.connect(g); g.connect(master); g.connect(wetIn);
-      o.start(ts); o.stop(ts + 0.8);
-    });
+    const o = ctx.createOscillator(); o.type = "sine"; o.frequency.value = 196.00;
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.linearRampToValueAtTime(0.014, t + 0.08);
+    g.gain.exponentialRampToValueAtTime(0.0004, t + 0.55);
+    o.connect(g); g.connect(master); g.connect(wetIn);
+    o.start(t); o.stop(t + 0.6);
   }
   function rustle(){
     if (!on || !ctx) return;
     const t = ctx.currentTime;
     const src = ctx.createBufferSource(); src.buffer = noise;
     const bp = ctx.createBiquadFilter(); bp.type = "bandpass";
-    bp.frequency.value = 1700; bp.Q.value = 1.1;
+    bp.frequency.value = 900; bp.Q.value = 0.8;
     const g = ctx.createGain();
     g.gain.setValueAtTime(0.0001, t);
-    g.gain.linearRampToValueAtTime(0.022, t + 0.05);
-    g.gain.exponentialRampToValueAtTime(0.0004, t + 0.34);
+    g.gain.linearRampToValueAtTime(0.014, t + 0.07);
+    g.gain.exponentialRampToValueAtTime(0.0004, t + 0.42);
     src.connect(bp); bp.connect(g); g.connect(master);
     src.start(t); src.stop(t + 0.36);
   }

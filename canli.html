@@ -51,13 +51,15 @@
   #sesHint b{color:#9debe7}
 
   #sesStart{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:5;display:flex;flex-direction:column;
-      align-items:center;gap:5px;padding:18px 30px;border:1px solid rgba(157,235,231,.45);border-radius:18px;
-      background:rgba(6,20,26,.92);backdrop-filter:blur(12px);color:#dff6f3;box-shadow:0 14px 50px rgba(0,0,0,.55);
-      cursor:pointer;text-align:center;transition:opacity .5s,transform .5s}
-  #sesStart b{font-size:26px;line-height:1}
-  #sesStart span{font-size:14px;font-weight:700;letter-spacing:.08em}
-  #sesStart small{font-size:10px;color:#7d97ad}
-  #sesStart.hide{opacity:0;pointer-events:none;transform:translate(-50%,-50%) scale(.9)}
+      align-items:center;gap:7px;padding:26px 44px;border:1px solid rgba(157,235,231,.55);border-radius:20px;
+      background:rgba(6,20,26,.95);backdrop-filter:blur(12px);color:#dff6f3;box-shadow:0 14px 50px rgba(0,0,0,.6);
+      cursor:pointer;text-align:center;transition:opacity .5s,transform .5s;animation:pulse 2.2s ease-in-out infinite}
+  #sesStart b{font-size:32px;line-height:1}
+  #sesStart span{font-size:18px;font-weight:700;letter-spacing:.08em}
+  #sesStart small{font-size:11px;color:#9debe7}
+  #sesStart.hide{opacity:0;pointer-events:none;transform:translate(-50%,-50%) scale(.9);animation:none}
+  @keyframes pulse{0%,100%{box-shadow:0 14px 50px rgba(0,0,0,.6),0 0 0 0 rgba(157,235,231,.25)}
+                   50%{box-shadow:0 14px 50px rgba(0,0,0,.6),0 0 0 14px rgba(157,235,231,0)}}
 
   .mono{font-family:ui-monospace,"Roboto Mono",Menlo,Consolas,monospace}
   #ticker{position:absolute;left:0;right:0;bottom:0;height:48px;display:flex;align-items:center;gap:10px;padding:0 20px;
@@ -255,10 +257,10 @@ function vgrad(x, y0, y1, c0, c1){
 const SES = (function(){
   const AC = window.AudioContext || window.webkitAudioContext || null;
   const CHORDS = [
-    [55.00, 82.41, 110.00, 164.81, 196.00],
-    [49.00, 73.42, 98.00, 146.83, 174.61],
-    [43.65, 65.41, 87.31, 130.81, 164.81],
-    [58.27, 87.31, 116.54, 174.61, 220.00]
+    [110.00, 164.81, 220.00, 261.63, 329.63],
+    [98.00, 146.83, 196.00, 246.94, 293.66],
+    [87.31, 130.81, 174.61, 220.00, 261.63],
+    [116.54, 174.61, 233.08, 293.66, 349.23]
   ];
   let ctx = null, master = null, wetIn = null, noise = null;
   let padGain = null, padOsc = [], chordIdx = 0, chordTimer = null;
@@ -306,10 +308,10 @@ const SES = (function(){
     noise = makeNoise();
 
     // koyu ped: sadece sine, tiz harmoniği yok — uzun yumuşak geçiş
-    padGain = ctx.createGain(); padGain.gain.value = 0.42;
-    const lp = ctx.createBiquadFilter(); lp.type = "lowpass"; lp.frequency.value = 620; lp.Q.value = 0.4;
+    padGain = ctx.createGain(); padGain.gain.value = 0.62;
+    const lp = ctx.createBiquadFilter(); lp.type = "lowpass"; lp.frequency.value = 900; lp.Q.value = 0.4;
     padGain.connect(lp); lp.connect(master);
-    const send = ctx.createGain(); send.gain.value = 0.25; lp.connect(send); send.connect(rev);
+    const send = ctx.createGain(); send.gain.value = 0.2; lp.connect(send); send.connect(rev);
 
     CHORDS[0].forEach((f, i) => {
       const o = ctx.createOscillator();
@@ -317,7 +319,7 @@ const SES = (function(){
       o.frequency.value = f;
       o.detune.value = (Math.random() * 4 - 2);
       const g = ctx.createGain();
-      g.gain.value = i === 0 ? 0.085 : 0.022;
+      g.gain.value = i === 0 ? 0.10 : 0.045;
       o.connect(g); g.connect(padGain);
       o.start();
       padOsc.push(o);
@@ -365,7 +367,7 @@ const SES = (function(){
       const n = 1 + Math.floor(Math.random() * 3);
       let t = t0;
       for (let i = 0; i < n; i++){
-        voice(t, 0.020 + Math.random() * 0.012, 250 + Math.random() * 210);
+        voice(t, 0.028 + Math.random() * 0.014, 320 + Math.random() * 260);
         t += 0.13 + Math.random() * 0.17;
       }
       chatTimer = setTimeout(run, 2600 + Math.random() * 4200);
@@ -383,10 +385,10 @@ const SES = (function(){
       for (let i = 0; i < n; i++){
         const t = t0 + i * (0.08 + Math.random() * 0.12);
         const src = ctx.createBufferSource(); src.buffer = noise;
-        const lp = ctx.createBiquadFilter(); lp.type = "lowpass"; lp.frequency.value = 1300;
+        const lp = ctx.createBiquadFilter(); lp.type = "lowpass"; lp.frequency.value = 1800;
         const g = ctx.createGain();
         g.gain.setValueAtTime(0.0001, t);
-        g.gain.linearRampToValueAtTime(0.008, t + 0.008);
+        g.gain.linearRampToValueAtTime(0.014, t + 0.008);
         g.gain.exponentialRampToValueAtTime(0.0004, t + 0.06);
         src.connect(lp); lp.connect(g); g.connect(master);
         src.start(t); src.stop(t + 0.08);
@@ -400,9 +402,9 @@ const SES = (function(){
     const src = ctx.createBufferSource();
     src.buffer = noise; src.loop = true;
     const bp = ctx.createBiquadFilter(); bp.type = "bandpass";
-    bp.frequency.value = 380; bp.Q.value = 0.6;
-    const lp = ctx.createBiquadFilter(); lp.type = "lowpass"; lp.frequency.value = 1100;
-    const g = ctx.createGain(); g.gain.value = 0.038;
+    bp.frequency.value = 500; bp.Q.value = 0.6;
+    const lp = ctx.createBiquadFilter(); lp.type = "lowpass"; lp.frequency.value = 1400;
+    const g = ctx.createGain(); g.gain.value = 0.05;
     const lfo = ctx.createOscillator(); lfo.frequency.value = 0.055;
     const lg = ctx.createGain(); lg.gain.value = 0.014;
     lfo.connect(lg); lg.connect(g.gain);
@@ -438,7 +440,7 @@ const SES = (function(){
       if (ctx.state === "suspended") ctx.resume();
       on = true;
       master.gain.cancelScheduledValues(ctx.currentTime);
-      master.gain.setTargetAtTime(0.42, ctx.currentTime, 1.2);
+      master.gain.setTargetAtTime(0.7, ctx.currentTime, 0.6);
       if (!chordTimer) chordTimer = setTimeout(nextChord, 14000);
       startChatter(); startClicks();
       store.write("1");
@@ -463,10 +465,10 @@ const SES = (function(){
   function chime(){
     if (!on || !ctx) return;
     const t = ctx.currentTime;
-    const o = ctx.createOscillator(); o.type = "sine"; o.frequency.value = 196.00;
+    const o = ctx.createOscillator(); o.type = "sine"; o.frequency.value = 392.00;
     const g = ctx.createGain();
     g.gain.setValueAtTime(0.0001, t);
-    g.gain.linearRampToValueAtTime(0.014, t + 0.08);
+    g.gain.linearRampToValueAtTime(0.025, t + 0.08);
     g.gain.exponentialRampToValueAtTime(0.0004, t + 0.55);
     o.connect(g); g.connect(master); g.connect(wetIn);
     o.start(t); o.stop(t + 0.6);
@@ -476,10 +478,10 @@ const SES = (function(){
     const t = ctx.currentTime;
     const src = ctx.createBufferSource(); src.buffer = noise;
     const bp = ctx.createBiquadFilter(); bp.type = "bandpass";
-    bp.frequency.value = 900; bp.Q.value = 0.8;
+    bp.frequency.value = 1200; bp.Q.value = 0.8;
     const g = ctx.createGain();
     g.gain.setValueAtTime(0.0001, t);
-    g.gain.linearRampToValueAtTime(0.014, t + 0.07);
+    g.gain.linearRampToValueAtTime(0.02, t + 0.07);
     g.gain.exponentialRampToValueAtTime(0.0004, t + 0.42);
     src.connect(bp); bp.connect(g); g.connect(master);
     src.start(t); src.stop(t + 0.36);
@@ -506,6 +508,9 @@ const SES = (function(){
       if (!on && wanted) enable();
     };
     document.addEventListener("pointerdown", kick, { passive: true });
+    document.addEventListener("touchstart", kick, { passive: true });
+    document.addEventListener("mousedown", kick);
+    document.addEventListener("click", kick);
     document.addEventListener("keydown", kick);
 
     document.addEventListener("visibilitychange", () => {
@@ -1285,8 +1290,11 @@ function startReplay(){
 /* ── ölçek ── */
 const sceneEl = document.getElementById("scene");
 function fit(){
-  const portrait = innerHeight > innerWidth;
-  const s = Math.min(innerWidth/W * (portrait ? 1.15 : 1), innerHeight/H);
+  const vv = window.visualViewport;
+  const w = (vv && vv.width) || innerWidth;
+  const h = (vv && vv.height) || innerHeight;
+  const portrait = h > w;
+  const s = Math.min(w / W * (portrait ? 1.35 : 1), h / H);
   sceneEl.style.transform = `translate(-50%,-50%) scale(${s})`;
 }
 
@@ -1303,6 +1311,8 @@ function init(){
   setupCanvas(); fit();
   addEventListener("resize", fit);
   addEventListener("orientationchange", () => setTimeout(fit, 120));
+  if (window.visualViewport) window.visualViewport.addEventListener("resize", fit);
+  setInterval(fit, 400);
   fetch("./data/canli.json", { cache:"no-store" })
     .then(r => { if (!r.ok) throw 0; return r.json(); })
     .then(j => boot(j))

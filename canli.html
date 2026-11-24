@@ -1285,11 +1285,9 @@ function startReplay(){
 /* ── ölçek ── */
 const sceneEl = document.getElementById("scene");
 function fit(){
-  const landscape = innerWidth >= innerHeight;
-  const s = landscape
-    ? Math.min(innerWidth/W, innerHeight/H)
-    : Math.min(innerHeight/W, innerWidth/H);
-  sceneEl.style.transform = `translate(-50%,-50%) scale(${s}) rotate(${landscape ? 0 : 90}deg)`;
+  const portrait = innerHeight > innerWidth;
+  const s = Math.min(innerWidth/W * (portrait ? 1.15 : 1), innerHeight/H);
+  sceneEl.style.transform = `translate(-50%,-50%) scale(${s})`;
 }
 
 /* ── başlat ── */

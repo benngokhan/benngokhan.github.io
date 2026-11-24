@@ -1,0 +1,204 @@
+{
+ "schema": 1,
+ "mod": "replay",
+ "mod_etiketi": "REPLAY · 21 KAS 2026",
+ "guncelleme": "2026-11-21T20:09:20+03:00",
+ "sistem": {
+  "durum": "ok",
+  "slot_saati": "19:30",
+  "gunluk": "günde 1 Short · otomatik"
+ },
+ "ozet": {
+  "toplam": 9,
+  "ayakta": 9,
+  "pasif": 0
+ },
+ "kanal": {
+  "izlenme": 56398,
+  "abone": 81,
+  "video": 103,
+  "begeni": 256,
+  "yorum": 39,
+  "haftalik": 7
+ },
+ "kuyruk": {
+  "shorts": 19,
+  "uzun": 0,
+  "gun": 19,
+  "sonraki": "video_183",
+  "baslik": "Kutup Ayılarının Kürkü Aslında Beyaz Değil, Derisi Simsiyah! 🐻‍❄️🔬"
+ },
+ "kotalar": [
+  {
+   "ad": "Pexels",
+   "kalan": 24644,
+   "limit": 25000,
+   "birim": "istek/ay"
+  },
+  {
+   "ad": "Gemini",
+   "kalan": 1496,
+   "limit": 1500,
+   "birim": "istek/gün"
+  },
+  {
+   "ad": "Groq",
+   "kalan": 999,
+   "limit": 1000,
+   "birim": "istek/gün"
+  },
+  {
+   "ad": "Drive",
+   "kalan": 3594499608,
+   "limit": 16106127360,
+   "birim": "bayt"
+  }
+ ],
+ "isci": [
+  {
+   "id": "motor",
+   "ad": "Video Motoru",
+   "kisa": "MOTOR",
+   "durum": "bekliyor",
+   "durum_metin": "ELLE ONAY",
+   "ayrinti": "7 sahne · 38-45 sn · Charon TTS",
+   "son_eylem": "onay_bekleyen/ boş · üretim elle tetikleniyor",
+   "ilerleme": 0
+  },
+  {
+   "id": "planlayici",
+   "ad": "5 Günlük Planlayıcı",
+   "kisa": "PLAN",
+   "durum": "beklemede",
+   "durum_metin": "11:08 TR",
+   "ayrinti": "19 Shorts · 19 gün stok",
+   "son_eylem": "5 günlük plan güncel · eksik kapak yok",
+   "ilerleme": 100
+  },
+  {
+   "id": "yukleyici",
+   "ad": "Yükleyici",
+   "kisa": "YÜKLEYİCİ",
+   "durum": "tamam",
+   "durum_metin": "OK",
+   "ayrinti": "Drive → YouTube · 19:30 slotu",
+   "son_eylem": "video_182.mp4 yayınlandı",
+   "ilerleme": 100
+  },
+  {
+   "id": "kapak",
+   "ad": "Kapak İşçisi",
+   "kisa": "KAPAK",
+   "durum": "tamam",
+   "durum_metin": "OK",
+   "ayrinti": "Drive hazır kapak → YouTube",
+   "son_eylem": "video_182 için hazır kapak uygulandı",
+   "ilerleme": 100
+  },
+  {
+   "id": "yorum",
+   "ad": "Yorumcu",
+   "kisa": "YORUM",
+   "durum": "tamam",
+   "durum_metin": "OK",
+   "ayrinti": "İlk sabit yorum",
+   "son_eylem": "video_182 altına ilk yorum yazıldı",
+   "ilerleme": 100
+  },
+  {
+   "id": "analitik",
+   "ad": "Analitik",
+   "kisa": "ANALİTİK",
+   "durum": "tamam",
+   "durum_metin": "OK",
+   "ayrinti": "YouTube API · 30 video",
+   "son_eylem": "30 videonun görüntülenme verisi güncellendi",
+   "ilerleme": 100
+  },
+  {
+   "id": "kota",
+   "ad": "Kota Bekçisi",
+   "kisa": "KOTA",
+   "durum": "ok",
+   "durum_metin": "OK",
+   "ayrinti": "Pexels · Gemini · Groq",
+   "son_eylem": "Tüm servislerde kota yeterli",
+   "ilerleme": 100
+  },
+  {
+   "id": "watchdog",
+   "ad": "Slot Watchdog",
+   "kisa": "WATCHDOG",
+   "durum": "beklemede",
+   "durum_metin": "19:50",
+   "ayrinti": "Slot sağlık kontrolü",
+   "son_eylem": "Erken uyarı yok · slot sağlıklı",
+   "ilerleme": 100
+  },
+  {
+   "id": "arsiv",
+   "ad": "Arşiv",
+   "kisa": "ARŞİV",
+   "durum": "tamam",
+   "durum_metin": "OK",
+   "ayrinti": "Drive klasör düzeni",
+   "son_eylem": "Stok ve tablo senkron",
+   "ilerleme": 100
+  }
+ ],
+ "akis": [
+  {
+   "t": "11:08",
+   "isci": "planlayici",
+   "metin": "5 günlük plan güncel · 19 Shorts stok, eksik kapak yok"
+  },
+  {
+   "t": "14:26",
+   "isci": "telemetri",
+   "metin": "Drive stoğu senkronlandı · 19 Shorts, sıradaki video_183",
+   "kenar": "drive-slot"
+  },
+  {
+   "t": "19:12",
+   "isci": "yukleyici",
+   "metin": "Kuyruk ısıtıldı · Drive ve tablo kontrol edildi",
+   "kenar": "drive-slot"
+  },
+  {
+   "t": "19:15",
+   "isci": "kapak",
+   "metin": "video_182 için hazır Drive kapağı uygulandı",
+   "kenar": "yt-kapak"
+  },
+  {
+   "t": "19:16",
+   "isci": "yorum",
+   "metin": "video_182 altına ilk sabit yorum yazıldı",
+   "kenar": "kapak-yorum"
+  },
+  {
+   "t": "19:30",
+   "isci": "yukleyici",
+   "metin": "19:30 yayın slotu açıldı",
+   "kenar": "slot-yt"
+  },
+  {
+   "t": "19:31",
+   "isci": "yukleyici",
+   "metin": "video_182 yayınlandı · youtu.be/_J95OOCW488",
+   "kenar": "slot-yt"
+  },
+  {
+   "t": "19:50",
+   "isci": "watchdog",
+   "metin": "Slot watchdog erken uyarıyı geçti · slot sağlıklı",
+   "kenar": "drive-slot"
+  },
+  {
+   "t": "20:09",
+   "isci": "analitik",
+   "metin": "30 videonun görüntülenme verisi güncellendi",
+   "kenar": "yorum-analitik"
+  }
+ ]
+}

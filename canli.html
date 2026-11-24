@@ -1,0 +1,1312 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#050d13">
+<meta name="description" content="Bilgi Dozu üretim ofisinin canlı akışı: 9 maskot, gerçek yayın verileri ve sakin ofis ambiyansı.">
+<title>Canlı Akış · Bilgi Dozu</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%;overflow:hidden;background:#040a10}
+  body{font-family:-apple-system,"Segoe UI",Roboto,Arial,sans-serif;color:#dbe7f3;-webkit-font-smoothing:antialiased;user-select:none}
+  #stage{position:absolute;left:50%;top:50%;width:1280px;height:800px;transform-origin:center center;transform:translate(-50%,-50%);overflow:hidden}
+  #scene{position:absolute;inset:0;display:block}
+
+  #top{position:absolute;left:0;right:0;top:0;height:56px;display:flex;align-items:center;gap:20px;justify-content:space-between;
+       padding:0 18px;background:linear-gradient(180deg,rgba(4,10,16,.96) 0%,rgba(4,10,16,.5) 66%,transparent 100%);z-index:3}
+  .brand{display:flex;align-items:center;gap:9px;font-size:13px;font-weight:700;letter-spacing:.18em;color:#eaf6ff;
+         text-decoration:none;white-space:nowrap;flex:none}
+  .brand .logo{color:#9debe7;font-size:16px;text-shadow:0 0 14px rgba(157,235,231,.9)}
+  .brand .sep{color:#2c4459;font-weight:400}
+  .brand em{font-style:normal;font-weight:500;font-size:10.5px;letter-spacing:.2em;color:#7d97ad}
+
+  #siteNav{display:flex;align-items:center;gap:22px;font-size:11.5px;color:#a8bec0;margin-left:8px;margin-right:auto}
+  #siteNav a{color:inherit;text-decoration:none;letter-spacing:.02em;transition:color .2s;white-space:nowrap}
+  #siteNav a:hover{color:#9debe7}
+  #siteNav a.active{color:#9debe7;font-weight:700}
+  #siteNav a.active::before{content:"";display:inline-block;width:5px;height:5px;border-radius:50%;background:#9debe7;
+         box-shadow:0 0 8px #9debe7;margin-right:6px;vertical-align:middle;animation:blink 1.8s infinite}
+
+  .right{display:flex;align-items:center;gap:12px;flex:none}
+  .badge{display:flex;align-items:center;gap:6px;font-size:9.5px;letter-spacing:.18em;font-weight:700;color:#f6cc7a;
+         border:1px solid rgba(246,204,122,.35);background:rgba(246,204,122,.07);padding:4px 10px;border-radius:20px;white-space:nowrap}
+  .badge i{width:5px;height:5px;border-radius:50%;background:#f6cc7a;box-shadow:0 0 8px #f6cc7a;animation:blink 1.8s infinite}
+  .badge.canli{color:#8ef0c0;border-color:rgba(142,240,192,.4);background:rgba(142,240,192,.08)}
+  .badge.canli i{background:#8ef0c0;box-shadow:0 0 8px #8ef0c0}
+  #date{font-size:10px;letter-spacing:.16em;color:#7d97ad;white-space:nowrap}
+  #clock{font-size:13px;color:#cfe6f5;white-space:nowrap}
+  #ses,#fs{height:27px;border-radius:7px;border:1px solid rgba(150,220,230,.24);background:rgba(120,200,255,.06);
+      color:#9fb6c9;font-size:12px;cursor:pointer;line-height:1;display:inline-flex;align-items:center;justify-content:center}
+  #ses{padding:0 9px;gap:6px;font-size:9px;letter-spacing:.16em;font-weight:700}
+  #ses.on{color:#8ef0c0;border-color:rgba(142,240,192,.45);background:rgba(142,240,192,.08)}
+  #ses:hover,#fs:hover{color:#9debe7;border-color:rgba(157,235,231,.55)}
+  #fs{width:27px;font-size:13px}
+
+  #sesHint{position:absolute;right:18px;top:62px;z-index:4;display:flex;align-items:center;gap:8px;
+      border:1px solid rgba(157,235,231,.32);background:rgba(6,20,25,.86);backdrop-filter:blur(10px);
+      border-radius:20px;padding:7px 13px;font-size:10.5px;letter-spacing:.04em;color:#cfe6e4;
+      box-shadow:0 8px 26px rgba(0,0,0,.4);transition:opacity .5s,transform .5s}
+  #sesHint.hide{opacity:0;transform:translateY(-6px);pointer-events:none}
+  #sesHint b{color:#9debe7}
+
+  .mono{font-family:ui-monospace,"Roboto Mono",Menlo,Consolas,monospace}
+  #ticker{position:absolute;left:0;right:0;bottom:0;height:48px;display:flex;align-items:center;gap:10px;padding:0 20px;
+          background:linear-gradient(0deg,rgba(4,10,16,.97) 0%,rgba(4,10,16,.62) 55%,transparent 100%);z-index:3;font-size:11px}
+  #ticker .dot{width:6px;height:6px;border-radius:50%;background:#9debe7;box-shadow:0 0 10px #9debe7;flex:none}
+  #tkTime{color:#5d7d94;font-size:10px}
+  #tkWho{font-size:9px;letter-spacing:.12em;font-weight:700;text-transform:uppercase;color:#9debe7;min-width:74px}
+  #tkMsg{color:#c3d5e3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:opacity .3s}
+  #ticker .src{margin-left:auto;font-size:8.5px;letter-spacing:.16em;color:#3f5a6e;flex:none}
+
+  @media (max-width:1080px){#siteNav{display:none}}
+  @media (max-width:720px){#date{display:none}#ses span:last-child{display:none}#ses{padding:0;width:27px}}
+
+  @keyframes blink{0%,100%{opacity:1}50%{opacity:.25}}
+</style>
+</head>
+<body>
+<div id="stage">
+  <canvas id="scene"></canvas>
+
+  <header id="top">
+    <a class="brand" href="https://benngokhan.github.io/">
+      <span class="logo">◆</span> BİLGİDOZU
+      <span class="sep">·</span>
+      <em>ÜRETİM OFİSİ</em>
+    </a>
+    <nav id="siteNav" aria-label="Site menüsü">
+      <a href="https://benngokhan.github.io/#videolar">Videolar</a>
+      <a href="https://benngokhan.github.io/#hikaye">Hakkımızda</a>
+      <a href="https://benngokhan.github.io/#derinlemesine">Daha fazlası</a>
+      <a class="active" href="./">Canlı Akış</a>
+    </nav>
+    <div class="right">
+      <span class="badge" id="mode"><i></i><span id="modeText">REPLAY</span></span>
+      <span id="date">—</span>
+      <span id="clock" class="mono">--:--:--</span>
+      <button id="ses" title="Ofis sesi ve fon müziği" aria-pressed="false"><span id="sesIcon">🔇</span><span id="sesText">SES</span></button>
+      <button id="fs" title="Tam ekran">⛶</button>
+    </div>
+  </header>
+
+  <div id="sesHint"><b>🔊</b> Ofis ambiyansı için ekrana bir kez dokun</div>
+
+  <footer id="ticker">
+    <span class="dot"></span>
+    <span id="tkTime" class="mono">--:--</span>
+    <span id="tkWho">—</span>
+    <span id="tkMsg">—</span>
+    <span class="src" id="tkSrc">REPLAY · KAYITLI GERÇEK OLAYLAR</span>
+  </footer>
+</div>
+
+<script>
+/* ═══════════════════════════════════════════════════════════════════
+   BİLGİDOZU · ÜRETİM OFİSİ  (göz hizası / perspektif görünüm)
+   Arka duvar, pencereli oda, derinlikli zemin. 9 maskot masalarında
+   çalışır; olay olunca biri evrakı kapıp koridordan arkadaşına gider.
+   Veri: ./data/canli.json · "replay" = kayıtlı gerçek olaylar
+   ═══════════════════════════════════════════════════════════════════ */
+
+const FALLBACK = {
+  mod: "replay", mod_etiketi: "REPLAY · 21 KAS 2026",
+  sistem: { slot_saati: "19:30" },
+  kanal: { izlenme: 56398, abone: 81, video: 103, yorum: 39, begeni: 256 },
+  kuyruk: { shorts: 19, gun: 19, sonraki: "video_183" },
+  isci: [
+    {id:"motor",durum:"bekliyor"},{id:"planlayici",durum:"beklemede"},{id:"yukleyici",durum:"tamam"},
+    {id:"kapak",durum:"tamam"},{id:"yorum",durum:"tamam"},{id:"analitik",durum:"tamam"},
+    {id:"kota",durum:"ok"},{id:"watchdog",durum:"beklemede"},{id:"arsiv",durum:"tamam"}
+  ],
+  akis: [
+    {t:"11:08",isci:"planlayici",metin:"5 günlük plan güncel · 19 Shorts stok, eksik kapak yok"},
+    {t:"14:26",isci:"telemetri",metin:"Drive stoğu senkronlandı · 19 Shorts, sıradaki video_183",kenar:"drive-slot"},
+    {t:"19:12",isci:"yukleyici",metin:"Kuyruk ısıtıldı · Drive ve tablo kontrol edildi",kenar:"drive-slot"},
+    {t:"19:15",isci:"kapak",metin:"video_182 için hazır Drive kapağı uygulandı",kenar:"yt-kapak"},
+    {t:"19:16",isci:"yorum",metin:"video_182 altına ilk sabit yorum yazıldı",kenar:"kapak-yorum"},
+    {t:"19:30",isci:"yukleyici",metin:"19:30 yayın slotu açıldı",kenar:"slot-yt"},
+    {t:"19:31",isci:"yukleyici",metin:"video_182 yayınlandı · youtu.be/_J95OOCW488",kenar:"slot-yt"},
+    {t:"19:50",isci:"watchdog",metin:"Slot watchdog erken uyarıyı geçti · slot sağlıklı",kenar:"drive-slot"},
+    {t:"20:09",isci:"analitik",metin:"30 videonun görüntülenme verisi güncellendi",kenar:"yorum-analitik"}
+  ]
+};
+
+/* ── sahne ölçüleri ── */
+const W = 1280, H = 800;
+const TAU = Math.PI * 2;
+const WALL = 300;                        // duvar/zemin sınırı
+const VP = { x: 640, y: 252 };           // perspektif kaçış noktası
+const COLS = [300, 640, 980];
+const ROWS = [
+  { y: 392, s: 0.82 },                   // arka sıra
+  { y: 546, s: 0.95 },                   // orta sıra
+  { y: 706, s: 1.09 }                    // ön sıra
+];
+const LANE_Y = [462, 612, 620];          // sıra koridorları
+const VERT = [430, 834];                 // dikey koridorlar
+const PROP_LANE = 352;                   // eşyaların önündeki hat
+
+const WORKERS = [
+  { id:"motor",      label:"MOTOR",     emoji:"🎬", c:"#22d3ee", row:0, col:0 },
+  { id:"planlayici", label:"PLAN",      emoji:"📅", c:"#a78bfa", row:0, col:1 },
+  { id:"yukleyici",  label:"YÜKLEYİCİ", emoji:"🚀", c:"#34d399", row:0, col:2 },
+  { id:"kapak",      label:"KAPAK",     emoji:"🖼️", c:"#f472b6", row:1, col:0 },
+  { id:"yorum",      label:"YORUM",     emoji:"💬", c:"#fbbf24", row:1, col:1 },
+  { id:"analitik",   label:"ANALİTİK",  emoji:"📊", c:"#38bdf8", row:1, col:2 },
+  { id:"kota",       label:"KOTA",      emoji:"🔋", c:"#f87171", row:2, col:0 },
+  { id:"watchdog",   label:"WATCHDOG",  emoji:"🛡️", c:"#94a3b8", row:2, col:1 },
+  { id:"arsiv",      label:"ARŞİV",     emoji:"📦", c:"#fb923c", row:2, col:2 }
+];
+
+const PROPS = [
+  { id:"drive", label:"DRİVE",   emoji:"☁️", c:"#7dd3fc", x:112,  y:352, w:104, h:150, top:202 },
+  { id:"slot",  label:"SLOT",    emoji:"⏰", c:"#fbbf24", x:490,  y:366, w:80,  h:126, top:240 },
+  { id:"yt",    label:"YOUTUBE", emoji:"▶️", c:"#ef4444", x:1120, y:372, w:216, h:138, top:100 }
+];
+
+const DURUM_RENK = { tamam:"#34d399", ok:"#34d399", beklemede:"#64748b", bekliyor:"#64748b", hata:"#f87171" };
+const ROUTES = {
+  "motor-drive":    ["motor", "drive"],
+  "drive-slot":     ["drive", "yukleyici"],
+  "slot-yt":        ["yukleyici", "yt"],
+  "yt-kapak":       ["yt", "kapak"],
+  "kapak-yorum":    ["kapak", "yorum"],
+  "yorum-analitik": ["yorum", "analitik"]
+};
+const AYLAR = ["OCA","ŞUB","MAR","NİS","MAY","HAZ","TEM","AĞU","EYL","EKİ","KAS","ARA"];
+
+/* ── yerleşim ── */
+const PLACES = {};
+function scaleAtY(y){
+  return Math.max(0.76, Math.min(1.16, 0.80 + (y - 330) * 0.00075));
+}
+WORKERS.forEach(w => {
+  const r = ROWS[w.row];
+  PLACES[w.id] = {
+    id:w.id, type:"desk", x:COLS[w.col], y:r.y, row:w.row, s:r.s,
+    standX: COLS[w.col] + 66 * r.s, c:w.c, label:w.label, emoji:w.emoji
+  };
+});
+PROPS.forEach(p => {
+  PLACES[p.id] = {
+    id:p.id, type:"prop", x:p.x, y:p.y, c:p.c, label:p.label,
+    emoji:p.emoji, prop:p, s: scaleAtY(p.y)
+  };
+});
+
+/* ── canvas ── */
+const CV = document.getElementById("scene");
+const X = CV.getContext("2d");
+const nf = new Intl.NumberFormat("tr-TR");
+const pad = n => String(n).padStart(2, "0");
+
+function setupCanvas(){
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  CV.width = W * dpr; CV.height = H * dpr;
+  CV.style.width = W + "px"; CV.style.height = H + "px";
+  X.setTransform(dpr, 0, 0, dpr, 0, 0);
+  X.textBaseline = "middle";
+}
+
+/* ── durum ── */
+let D = FALLBACK, time = 0, last = 0;
+const mascots = {};
+const jobs = [];
+const pending = [];
+const parts = [];
+const confetti = [];
+let bubble = null;
+
+/* ── yardımcı ── */
+function rgba(hex, a){
+  const n = parseInt(hex.slice(1), 16);
+  return `rgba(${(n>>16)&255},${(n>>8)&255},${n&255},${a})`;
+}
+function rr(x,y,w,h,r){
+  X.beginPath();
+  if (X.roundRect) X.roundRect(x,y,w,h,r);
+  else { X.moveTo(x+r,y); X.arcTo(x+w,y,x+w,y+h,r); X.arcTo(x+w,y+h,x,y+h,r); X.arcTo(x,y+h,x,y,r); X.arcTo(x,y,x+w,y,r); X.closePath(); }
+}
+function accent(id){
+  const w = (D.isci || []).find(x => x.id === id);
+  return DURUM_RENK[w?.durum] || "#34d399";
+}
+function vgrad(x, y0, y1, c0, c1){
+  const g = X.createLinearGradient(x, y0, x, y1);
+  g.addColorStop(0, c0); g.addColorStop(1, c1);
+  return g;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   SES · ofis uğultusu + sakin fon müziği + hafif evrak hışırtısı
+   Tarayıcı kuralı gereği ilk dokunuştan sonra başlar.
+   ═══════════════════════════════════════════════════════════════════ */
+const SES = (function(){
+  const AC = window.AudioContext || window.webkitAudioContext || null;
+  const CHORDS = [
+    [110.00, 164.81, 220.00, 261.63, 329.63],
+    [87.31, 130.81, 174.61, 220.00, 261.63],
+    [65.41, 130.81, 196.00, 246.94, 329.63],
+    [98.00, 146.83, 196.00, 246.94, 293.66]
+  ];
+  let ctx = null, master = null, wetIn = null, noise = null;
+  let padGain = null, padOsc = [], chordIdx = 0, chordTimer = null;
+  let chatTimer = null, clickTimer = null, clinkTimer = null;
+  let on = false, wanted = true;
+
+  const store = {
+    read(){ try { return localStorage.getItem("bd-ses"); } catch(e){ return null; } },
+    write(v){ try { localStorage.setItem("bd-ses", v); } catch(e){} }
+  };
+
+  function makeNoise(){
+    const len = Math.floor(ctx.sampleRate * 2);
+    const b = ctx.createBuffer(1, len, ctx.sampleRate);
+    const d = b.getChannelData(0);
+    for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+    return b;
+  }
+  function makeImpulse(sec, decay){
+    const len = Math.floor(ctx.sampleRate * sec);
+    const b = ctx.createBuffer(2, len, ctx.sampleRate);
+    for (let c = 0; c < 2; c++){
+      const d = b.getChannelData(c);
+      for (let i = 0; i < len; i++){
+        d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, decay);
+      }
+    }
+    return b;
+  }
+
+  function build(){
+    ctx = new AC();
+    master = ctx.createGain();
+    master.gain.value = 0;
+    const comp = ctx.createDynamicsCompressor();
+    comp.threshold.value = -20; comp.knee.value = 24; comp.ratio.value = 3;
+    comp.attack.value = 0.02; comp.release.value = 0.4;
+    master.connect(comp); comp.connect(ctx.destination);
+
+    const rev = ctx.createConvolver();
+    rev.buffer = makeImpulse(2.6, 3);
+    wetIn = ctx.createGain(); wetIn.gain.value = 0.32;
+    rev.connect(wetIn); wetIn.connect(master);
+
+    noise = makeNoise();
+
+    // yumuşak ped: 5 ses, akorlar arasında kayarak geçiş
+    padGain = ctx.createGain(); padGain.gain.value = 0.5;
+    const lp = ctx.createBiquadFilter(); lp.type = "lowpass"; lp.frequency.value = 1050; lp.Q.value = 0.5;
+    padGain.connect(lp); lp.connect(master);
+    const send = ctx.createGain(); send.gain.value = 0.45; lp.connect(send); send.connect(rev);
+
+    CHORDS[0].forEach((f, i) => {
+      const o = ctx.createOscillator();
+      o.type = i === 0 ? "sine" : "triangle";
+      o.frequency.value = f;
+      o.detune.value = (Math.random() * 8 - 4);
+      const g = ctx.createGain();
+      g.gain.value = i === 0 ? 0.07 : 0.032;
+      o.connect(g); g.connect(padGain);
+      o.start();
+      padOsc.push(o);
+    });
+
+    startChatter();
+    startClicks();
+  }
+
+  function nextChord(){
+    chordIdx = (chordIdx + 1) % CHORDS.length;
+    const t = ctx.currentTime;
+    CHORDS[chordIdx].forEach((f, i) => {
+      padOsc[i].frequency.setTargetAtTime(f, t, 1.6);
+    });
+    chordTimer = setTimeout(nextChord, 8200);
+  }
+
+  function voice(t, vol, freq){
+    const src = ctx.createBufferSource(); src.buffer = noise;
+    const bp = ctx.createBiquadFilter(); bp.type = "bandpass";
+    bp.frequency.value = freq; bp.Q.value = 6.5;
+    const g = ctx.createGain();
+    const dur = 0.07 + Math.random() * 0.09;
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.linearRampToValueAtTime(vol, t + 0.02);
+    g.gain.exponentialRampToValueAtTime(0.0005, t + dur);
+    src.connect(bp); bp.connect(g);
+    if (ctx.createStereoPanner){
+      const p = ctx.createStereoPanner();
+      p.pan.value = (Math.random() * 2 - 1) * 0.75;
+      g.connect(p); p.connect(master); p.connect(wetIn);
+    } else {
+      g.connect(master); g.connect(wetIn);
+    }
+    src.start(t); src.stop(t + dur + 0.04);
+  }
+
+  function startChatter(){
+    if (!on) return;
+    clearTimeout(chatTimer);
+    const run = () => {
+      if (!on) return;
+      const t0 = ctx.currentTime + 0.04;
+      const n = 1 + Math.floor(Math.random() * 3);
+      let t = t0;
+      for (let i = 0; i < n; i++){
+        voice(t, 0.035 + Math.random() * 0.02, 360 + Math.random() * 520);
+        t += 0.09 + Math.random() * 0.13;
+      }
+      chatTimer = setTimeout(run, 1500 + Math.random() * 3000);
+    };
+    chatTimer = setTimeout(run, 800);
+  }
+
+  function startClicks(){
+    if (!on) return;
+    clearTimeout(clickTimer); clearTimeout(clinkTimer);
+    const keys = () => {
+      if (!on) return;
+      const t0 = ctx.currentTime + 0.02;
+      const n = 2 + Math.floor(Math.random() * 4);
+      for (let i = 0; i < n; i++){
+        const t = t0 + i * (0.05 + Math.random() * 0.09);
+        const src = ctx.createBufferSource(); src.buffer = noise;
+        const hp = ctx.createBiquadFilter(); hp.type = "highpass"; hp.frequency.value = 2400;
+        const g = ctx.createGain();
+        g.gain.setValueAtTime(0.0001, t);
+        g.gain.linearRampToValueAtTime(0.016, t + 0.004);
+        g.gain.exponentialRampToValueAtTime(0.0004, t + 0.035);
+        src.connect(hp); hp.connect(g); g.connect(master);
+        src.start(t); src.stop(t + 0.05);
+      }
+      clickTimer = setTimeout(keys, 4200 + Math.random() * 6800);
+    };
+    const clink = () => {
+      if (!on) return;
+      const t = ctx.currentTime + 0.1;
+      const o = ctx.createOscillator(); o.type = "sine";
+      o.frequency.value = 1250 + Math.random() * 500;
+      const g = ctx.createGain();
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.linearRampToValueAtTime(0.014, t + 0.01);
+      g.gain.exponentialRampToValueAtTime(0.0004, t + 0.45);
+      o.connect(g); g.connect(master); g.connect(wetIn);
+      o.start(t); o.stop(t + 0.5);
+      clinkTimer = setTimeout(clink, 12000 + Math.random() * 14000);
+    };
+    clickTimer = setTimeout(keys, 2500);
+    clinkTimer = setTimeout(clink, 9000);
+  }
+
+  function startMurmur(){
+    const src = ctx.createBufferSource();
+    src.buffer = noise; src.loop = true;
+    const bp = ctx.createBiquadFilter(); bp.type = "bandpass";
+    bp.frequency.value = 480; bp.Q.value = 0.7;
+    const lp = ctx.createBiquadFilter(); lp.type = "lowpass"; lp.frequency.value = 1500;
+    const g = ctx.createGain(); g.gain.value = 0.05;
+    const lfo = ctx.createOscillator(); lfo.frequency.value = 0.07;
+    const lg = ctx.createGain(); lg.gain.value = 0.022;
+    lfo.connect(lg); lg.connect(g.gain);
+    src.connect(bp); bp.connect(lp); lp.connect(g);
+    g.connect(master);
+    const send = ctx.createGain(); send.gain.value = 0.18; g.connect(send); send.connect(wetIn);
+    src.start(); lfo.start();
+  }
+
+  function sync(){
+    const b = document.getElementById("ses");
+    if (b){
+      b.classList.toggle("on", on);
+      b.setAttribute("aria-pressed", on ? "true" : "false");
+      b.title = on ? "Sesi kapat" : "Ofis sesi ve fon müziği";
+    }
+    const i = document.getElementById("sesIcon"), t = document.getElementById("sesText");
+    if (i) i.textContent = on ? "🔊" : "🔇";
+    if (t) t.textContent = on ? "AÇIK" : "SES";
+    if (on){
+      const h = document.getElementById("sesHint");
+      if (h) h.classList.add("hide");
+    }
+  }
+
+  function enable(){
+    if (on || !wanted) return;
+    if (!AC) return;
+    try {
+      if (!ctx) build();
+      if (ctx.state === "suspended") ctx.resume();
+      on = true;
+      master.gain.cancelScheduledValues(ctx.currentTime);
+      master.gain.setTargetAtTime(0.5, ctx.currentTime, 0.9);
+      if (!chordTimer) chordTimer = setTimeout(nextChord, 8200);
+      startChatter(); startClicks();
+      store.write("1");
+      sync();
+    } catch(e){ on = false; }
+  }
+  function disable(){
+    if (!ctx || !on) return;
+    on = false;
+    clearTimeout(chordTimer); chordTimer = null;
+    clearTimeout(chatTimer); clearTimeout(clickTimer); clearTimeout(clinkTimer);
+    master.gain.cancelScheduledValues(ctx.currentTime);
+    master.gain.setTargetAtTime(0, ctx.currentTime, 0.35);
+    store.write("0");
+    sync();
+  }
+  function toggle(){
+    wanted = true;
+    if (on) disable(); else enable();
+  }
+
+  function chime(){
+    if (!on || !ctx) return;
+    const t = ctx.currentTime;
+    [783.99, 1046.5].forEach((f, i) => {
+      const o = ctx.createOscillator(); o.type = "sine"; o.frequency.value = f;
+      const g = ctx.createGain();
+      const ts = t + i * 0.085;
+      g.gain.setValueAtTime(0.0001, ts);
+      g.gain.linearRampToValueAtTime(0.028, ts + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.0004, ts + 0.75);
+      o.connect(g); g.connect(master); g.connect(wetIn);
+      o.start(ts); o.stop(ts + 0.8);
+    });
+  }
+  function rustle(){
+    if (!on || !ctx) return;
+    const t = ctx.currentTime;
+    const src = ctx.createBufferSource(); src.buffer = noise;
+    const bp = ctx.createBiquadFilter(); bp.type = "bandpass";
+    bp.frequency.value = 1700; bp.Q.value = 1.1;
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.linearRampToValueAtTime(0.022, t + 0.05);
+    g.gain.exponentialRampToValueAtTime(0.0004, t + 0.34);
+    src.connect(bp); bp.connect(g); g.connect(master);
+    src.start(t); src.stop(t + 0.36);
+  }
+
+  function boot(){
+    const b = document.getElementById("ses");
+    if (b) b.addEventListener("click", e => { e.stopPropagation(); toggle(); });
+
+    const stored = store.read();
+    wanted = stored !== "0";           // ilk ziyarette bir dokunuşla başlasın
+    if (stored === "1") sync();
+
+    const kick = () => {
+      if (!on && wanted) enable();
+    };
+    document.addEventListener("pointerdown", kick, { passive: true });
+    document.addEventListener("keydown", kick);
+
+    document.addEventListener("visibilitychange", () => {
+      if (!ctx) return;
+      if (document.hidden){
+        if (ctx.state === "running") ctx.suspend();
+      } else if (on){
+        ctx.resume();
+      }
+    });
+  }
+
+  return { boot, chime, rustle, toggle };
+})();
+SES.boot();
+
+/* ── yol ── */
+function mkPath(pts){
+  const segs = []; let total = 0;
+  for (let i = 0; i < pts.length - 1; i++){
+    const a = pts[i], b = pts[i+1];
+    const d = Math.hypot(b.x-a.x, b.y-a.y);
+    if (d < 1) continue;
+    segs.push({ a, b, d, start: total });
+    total += d;
+  }
+  return { segs, total };
+}
+function posAt(p, s){
+  if (!p.segs.length) return { x:0, y:0 };
+  s = Math.max(0, Math.min(p.total, s));
+  for (const g of p.segs){
+    if (s <= g.start + g.d){
+      const t = g.d ? (s - g.start) / g.d : 0;
+      return { x: g.a.x + (g.b.x - g.a.x) * t, y: g.a.y + (g.b.y - g.a.y) * t };
+    }
+  }
+  const g = p.segs[p.segs.length-1];
+  return { x:g.b.x, y:g.b.y };
+}
+function laneFor(ax, bx){
+  const d0 = Math.abs(ax - VERT[0]) + Math.abs(bx - VERT[0]);
+  const d1 = Math.abs(ax - VERT[1]) + Math.abs(bx - VERT[1]);
+  return d0 <= d1 ? VERT[0] : VERT[1];
+}
+function endPoint(P){
+  return P.type === "desk"
+    ? { x: P.standX, y: P.y - 34 * P.s }
+    : { x: P.x, y: P.y };
+}
+function buildRoute(a, b){
+  const stop = endPoint(b);
+  const bx = stop.x;
+  const by = stop.y;
+  const ay = a.type === "desk" ? LANE_Y[a.row] : a.y;
+  const pts = [{ x:a.x, y:a.y }, { x:a.x, y:ay }];
+  const lane = laneFor(a.x, bx);
+  pts.push({ x:lane, y:ay });
+  const bLane = b.type === "desk" ? LANE_Y[b.row] : PROP_LANE;
+  pts.push({ x:lane, y:bLane });
+  pts.push({ x:bx, y:bLane });
+  pts.push({ x:bx, y:by });
+  return mkPath(pts);
+}
+
+/* ── maskotlar ── */
+function buildMascots(){
+  Object.values(PLACES).forEach(p => {
+    if (p.type !== "desk") return;
+    mascots[p.id] = {
+      id:p.id, place:p, x:p.x, y:p.y - 18 * p.s,
+      walking:false, hop:0, flair:0, blink:0, drift: 0,
+      nextBlink: 2 + Math.random()*4, phase: Math.random()*TAU,
+      col:p.c, emoji:p.emoji
+    };
+  });
+}
+
+/* ── olay ── */
+function runEvent(ev){
+  let route = ev.demo ? [ev.isci, ev.isci] : ROUTES[ev.kenar];
+  if (!route){
+    if (PLACES[ev.isci]) route = [ev.isci, ev.isci];
+    else if (ev.isci === "telemetri") route = ["drive", "drive"];
+  }
+  if (!route) return;
+  const A = PLACES[route[0]], B = PLACES[route[1]];
+  if (!A || !B) return;
+
+  if (A === B){ arrive(B, ev); return; }
+
+  const carrier = mascots[A.id] || null;
+  SES.rustle();
+  const item = { A, B, ev, carrier };
+  if (carrier && (carrier.walking || jobs.some(j => j.carrier === carrier))) pending.push(item);
+  else startJob(item);
+  ticker(ev);
+}
+
+function startJob(item){
+  const { A, B, ev, carrier } = item;
+  const path = buildRoute(A, B);
+  jobs.push({ A, B, carrier, ev, phase:0, s:0, path, back:null, wait:0 });
+  if (carrier) carrier.walking = true;
+}
+
+function arrive(S, ev){
+  const m = mascots[S.id];
+  if (m){ m.hop = 1; m.flair = 1; }
+  burst(S);
+  if (/yayınlandı|yayinlandi/.test(ev.metin)) confettiBurst(S);
+  bubble = { text: ev.metin, t: 0, life: 3.8, at: S };
+  SES.chime();
+  ticker(ev);
+}
+
+function burst(S){
+  const y = S.type === "desk" ? S.y - 44 * S.s : S.prop.top + 10;
+  for (let i = 0; i < 16; i++){
+    const a = Math.random()*TAU, sp = 30 + Math.random()*90;
+    parts.push({ x:S.x, y, vx:Math.cos(a)*sp, vy:Math.sin(a)*sp - 28, life:.5+Math.random()*.5,
+                 c:S.c, r:1+Math.random()*1.8 });
+  }
+}
+function confettiBurst(S){
+  const cols = ["#22d3ee","#f472b6","#fbbf24","#34d399","#a78bfa"];
+  const y = S.type === "desk" ? S.y - 60 : S.prop.top + 16;
+  for (let i = 0; i < 36; i++){
+    const a = -Math.PI/2 + (Math.random()-.5)*2.4, sp = 80 + Math.random()*190;
+    confetti.push({ x:S.x, y, vx:Math.cos(a)*sp, vy:Math.sin(a)*sp,
+                    rot:Math.random()*TAU, vr:(Math.random()-.5)*8, life:1.8+Math.random()*.8,
+                    c:cols[i%cols.length], w:4+Math.random()*4 });
+  }
+}
+
+/* ── güncelleme ── */
+function update(dt){
+  Object.values(mascots).forEach(m => {
+    if (m.hop > 0) m.hop = Math.max(0, m.hop - dt*2.4);
+    if (m.flair > 0) m.flair = Math.max(0, m.flair - dt*1.5);
+    if (m.blink > 0) m.blink = Math.max(0, m.blink - dt);
+    if (time > m.nextBlink && m.blink === 0){ m.blink = .13; m.nextBlink = time + 2.2 + Math.random()*3.2; }
+  });
+
+  for (let i = jobs.length - 1; i >= 0; i--){
+    const j = jobs[i];
+    if (j.phase === 0){
+      j.s += 250 * dt;
+      const p = posAt(j.path, j.s);
+      if (j.carrier){ j.carrier.x = p.x; j.carrier.y = p.y; }
+      if (j.s >= j.path.total){
+        j.phase = 1; j.wait = 0; j.s = 0;
+        if (j.carrier){ const stop = endPoint(j.B); j.carrier.x = stop.x; j.carrier.y = stop.y; }
+        arrive(j.B, j.ev);
+      }
+    } else if (j.phase === 1){
+      j.wait += dt;
+      if (j.wait > 0.55){
+        j.phase = 2;
+        const stop = endPoint(j.B);
+        const pts = [...j.path.segs.map(g => g.a), stop].reverse();
+        j.back = mkPath(pts);
+      }
+    } else {
+      j.s += 250 * dt;
+      const p = posAt(j.back, j.s);
+      if (j.carrier){ j.carrier.x = p.x; j.carrier.y = p.y; }
+      if (j.s >= j.back.total){
+        if (j.carrier){
+          j.carrier.x = j.A.x; j.carrier.y = j.A.y - 18 * j.A.s;
+          j.carrier.walking = false;
+        }
+        jobs.splice(i, 1);
+        const k = pending.findIndex(it => !it.carrier || !(it.carrier.walking || jobs.some(x => x.carrier === it.carrier)));
+        if (k >= 0) startJob(pending.splice(k, 1)[0]);
+      }
+    }
+  }
+
+  for (let i = parts.length-1; i >= 0; i--){
+    const q = parts[i];
+    q.x += q.vx*dt; q.y += q.vy*dt; q.vy += 140*dt; q.life -= dt;
+    if (q.life <= 0) parts.splice(i, 1);
+  }
+  for (let i = confetti.length-1; i >= 0; i--){
+    const q = confetti[i];
+    q.x += q.vx*dt; q.y += q.vy*dt; q.vy += 260*dt; q.vx *= .99; q.rot += q.vr*dt; q.life -= dt;
+    if (q.life <= 0) confetti.splice(i, 1);
+  }
+  if (bubble){ bubble.t += dt; if (bubble.t > bubble.life) bubble = null; }
+}
+
+/* ── çizim: duvar + zemin ── */
+function drawRoom(){
+  // tavan
+  X.fillStyle = "#070c14";
+  X.fillRect(0, 0, W, 64);
+
+  // duvar
+  const wg = vgrad(0, 56, WALL, "#11202e", "#0a1420");
+  X.fillStyle = wg; X.fillRect(0, 56, W, WALL - 56);
+
+  // duvar panelleri
+  for (let x = 40; x < W; x += 84){
+    X.fillStyle = "rgba(140,205,255,.028)";
+    X.fillRect(x, 62, 62, WALL - 74);
+    X.strokeStyle = "rgba(120,190,240,.07)"; X.lineWidth = 1;
+    X.strokeRect(x + .5, 62.5, 62, WALL - 75);
+  }
+  // süpürgelik
+  X.fillStyle = "rgba(4,9,15,.9)"; X.fillRect(0, WALL - 12, W, 12);
+  X.strokeStyle = "rgba(120,200,255,.16)"; X.beginPath();
+  X.moveTo(0, WALL - 12.5); X.lineTo(W, WALL - 12.5); X.stroke();
+
+  // tavan spotları
+  for (let i = 0; i < 4; i++){
+    const x = 210 + i * 290;
+    const g = X.createRadialGradient(x, 66, 2, x, 66, 96);
+    g.addColorStop(0, "rgba(190,230,255,.22)"); g.addColorStop(1, "transparent");
+    X.fillStyle = g; X.fillRect(x - 96, 66, 192, 190);
+    X.fillStyle = "rgba(220,245,255,.55)";
+    X.fillRect(x - 22, 60, 44, 4);
+  }
+
+  // zemin
+  const fg = vgrad(0, WALL, H, "#0b1622", "#050a11");
+  X.fillStyle = fg; X.fillRect(0, WALL, W, H - WALL);
+
+  // zemin ışığı
+  const l1 = X.createRadialGradient(300, 640, 20, 300, 640, 460);
+  l1.addColorStop(0, "rgba(34,211,238,.10)"); l1.addColorStop(1, "transparent");
+  X.fillStyle = l1; X.fillRect(0, WALL, W, H - WALL);
+  const l2 = X.createRadialGradient(1010, 600, 20, 1010, 600, 420);
+  l2.addColorStop(0, "rgba(244,114,182,.07)"); l2.addColorStop(1, "transparent");
+  X.fillStyle = l2; X.fillRect(0, WALL, W, H - WALL);
+
+  // perspektif zemin çizgileri
+  X.save();
+  X.beginPath(); X.rect(0, WALL, W, H - WALL); X.clip();
+  X.strokeStyle = "rgba(96,170,220,.07)"; X.lineWidth = 1;
+  for (let x = -260; x <= W + 260; x += 92){
+    X.beginPath(); X.moveTo(VP.x, VP.y); X.lineTo(x, H); X.stroke();
+  }
+  const rowsY = [318, 342, 378, 424, 480, 552, 640, 744];
+  rowsY.forEach((y, i) => {
+    X.strokeStyle = `rgba(96,170,220,${0.075 - i * 0.006})`;
+    X.beginPath(); X.moveTo(0, y); X.lineTo(W, y); X.stroke();
+  });
+  X.restore();
+
+  // duvar/zemin birleşim gölgesi
+  const sh = X.createLinearGradient(0, WALL - 8, 0, WALL + 34);
+  sh.addColorStop(0, "rgba(0,0,0,.5)"); sh.addColorStop(1, "transparent");
+  X.fillStyle = sh; X.fillRect(0, WALL - 8, W, 42);
+}
+
+/* ── çizim: pencere ── */
+function drawWindow(){
+  const x = 56, y = 96, w = 190, h = 152;
+  X.save();
+  X.shadowColor = "rgba(80,180,255,.35)"; X.shadowBlur = 26;
+  rr(x, y, w, h, 6);
+  const g = X.createLinearGradient(x, y, x, y + h);
+  g.addColorStop(0, "#0d2740"); g.addColorStop(.55, "#071726"); g.addColorStop(1, "#040b14");
+  X.fillStyle = g; X.fill();
+  X.restore();
+  X.strokeStyle = "rgba(120,200,255,.28)"; X.lineWidth = 1.4; X.stroke();
+
+  X.save();
+  rr(x + 4, y + 4, w - 8, h - 8, 4); X.clip();
+  // ay
+  X.beginPath(); X.arc(x + 142, y + 38, 15, 0, TAU);
+  X.fillStyle = "rgba(226,240,255,.85)"; X.shadowColor = "rgba(200,235,255,.8)"; X.shadowBlur = 24; X.fill();
+  X.shadowBlur = 0;
+  // şehir
+  const bld = [[10,64],[36,44],[64,72],[92,52],[120,68],[150,40],[176,74]];
+  bld.forEach((b, i) => {
+    const bx = x + b[0], bh = b[1];
+    X.fillStyle = i % 2 ? "rgba(10,26,44,.95)" : "rgba(7,20,36,.95)";
+    X.fillRect(bx, y + h - bh, 22, bh);
+    for (let wy = y + h - bh + 8; wy < y + h - 8; wy += 12){
+      for (let wx = bx + 4; wx < bx + 18; wx += 7){
+        if (Math.sin(wx * 3 + wy) > 0.15){
+          X.fillStyle = `rgba(255,214,140,${0.25 + 0.4 * Math.abs(Math.sin(wx + wy + time * .4))})`;
+          X.fillRect(wx, wy, 2.6, 3.4);
+        }
+      }
+    }
+  });
+  // cam yansıması
+  X.fillStyle = "rgba(160,220,255,.06)";
+  X.beginPath(); X.moveTo(x + 10, y + h); X.lineTo(x + 70, y); X.lineTo(x + 104, y); X.lineTo(x + 44, y + h); X.closePath(); X.fill();
+  X.restore();
+
+  // çerçeve
+  X.strokeStyle = "rgba(10,20,32,.95)"; X.lineWidth = 5;
+  X.beginPath(); X.moveTo(x + w/2, y); X.lineTo(x + w/2, y + h); X.stroke();
+  X.beginPath(); X.moveTo(x, y + h/2); X.lineTo(x + w, y + h/2); X.stroke();
+
+  // perde
+  X.fillStyle = "rgba(16,32,48,.85)";
+  rr(x - 12, y - 10, 20, h + 22, 5); X.fill();
+  rr(x + w - 8, y - 10, 20, h + 22, 5); X.fill();
+}
+
+/* ── çizim: duvar panosu ── */
+function drawBoard(){
+  const w = 380, h = 118, x = 640 - w/2, y = 92;
+  X.save();
+  X.shadowColor = "rgba(0,0,0,.6)"; X.shadowBlur = 22; X.shadowOffsetY = 8;
+  rr(x, y, w, h, 10);
+  X.fillStyle = vgrad(0, y, y + h, "rgba(13,28,44,.97)", "rgba(5,11,19,.97)"); X.fill();
+  X.restore();
+  X.strokeStyle = "rgba(34,211,238,.32)"; X.lineWidth = 1.3; X.stroke();
+
+  X.textAlign = "center";
+  X.font = "700 8px -apple-system,Roboto,sans-serif";
+  X.fillStyle = "#6f8aa3";
+  X.fillText("S O N R A K İ   Y A Y I N", 640, y + 16);
+
+  const d = new Date();
+  const s = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 19, 30, 0, 0);
+  if (s <= d) s.setDate(s.getDate() + 1);
+  const ms = s - d;
+  const cd = `${pad(Math.floor(ms/3600000))}:${pad(Math.floor(ms%3600000/60000))}:${pad(Math.floor(ms%60000/1000))}`;
+
+  X.save();
+  X.font = "700 28px ui-monospace,'Roboto Mono',monospace";
+  X.fillStyle = "#7ff0ff";
+  X.shadowColor = "rgba(34,211,238,.75)"; X.shadowBlur = 16;
+  X.fillText(cd, 640, y + 44);
+  X.restore();
+
+  X.font = "600 8.5px -apple-system,Roboto,sans-serif";
+  X.fillStyle = "#8fb0c8";
+  X.fillText(`${D.sistem?.slot_saati || "19:30"} · günde 1 Short · otomatik`, 640, y + 63);
+
+  X.font = "700 13px -apple-system,Roboto,sans-serif";
+  X.fillStyle = "#eaf6ff";
+  X.fillText(`${D.kuyruk?.shorts ?? "—"} Shorts · ${D.kuyruk?.gun ?? "—"} gün stok`, 640, y + 83);
+
+  X.font = "600 9px -apple-system,Roboto,sans-serif";
+  X.fillStyle = "#7d97ad";
+  X.fillText(`${nf.format(D.kanal?.izlenme ?? 0)} izlenme · ${D.kanal?.abone ?? 0} abone · ${D.kanal?.video ?? 0} video`, 640, y + 102);
+}
+
+/* ── çizim: eşyalar ── */
+function drawProps(){
+  PROPS.forEach(p => {
+    const stand = PLACES[p.id];
+
+    if (p.id === "drive"){
+      // sunucu dolabı
+      X.save();
+      X.shadowColor = "rgba(0,0,0,.55)"; X.shadowBlur = 20; X.shadowOffsetY = 10;
+      rr(p.x - p.w/2, p.top, p.w, p.h, 7);
+      X.fillStyle = vgrad(0, p.top, p.y, "rgba(20,38,56,.98)", "rgba(8,16,26,.98)"); X.fill();
+      X.restore();
+      X.strokeStyle = rgba(p.c, .35); X.lineWidth = 1.2; X.stroke();
+
+      for (let i = 0; i < 5; i++){
+        const ry = p.top + 16 + i * 22;
+        X.fillStyle = "rgba(6,12,20,.9)";
+        rr(p.x - p.w/2 + 10, ry, p.w - 20, 15, 3); X.fill();
+        X.strokeStyle = "rgba(120,200,255,.12)"; X.lineWidth = 1; X.stroke();
+        const blink = 0.35 + 0.65 * Math.abs(Math.sin(time * 1.7 + i));
+        X.beginPath(); X.arc(p.x - p.w/2 + 19, ry + 7.5, 2, 0, TAU);
+        X.fillStyle = i % 2 ? rgba("#34d399", blink) : rgba(p.c, blink);
+        X.shadowColor = i % 2 ? "#34d399" : p.c; X.shadowBlur = 7; X.fill(); X.shadowBlur = 0;
+        X.fillStyle = "rgba(140,200,240,.13)";
+        X.fillRect(p.x - 22, ry + 5.5, 34, 3);
+      }
+      X.textAlign = "center";
+      X.font = "700 8px -apple-system,Roboto,sans-serif";
+      X.fillStyle = rgba(p.c, .9);
+      X.fillText(p.label, p.x, p.top - 8);
+      X.font = "15px -apple-system,Roboto,'Noto Color Emoji',sans-serif";
+      X.fillText(p.emoji, p.x + 26, p.top + 8);
+    }
+
+    if (p.id === "slot"){
+      // podyum
+      X.fillStyle = "rgba(0,0,0,.4)";
+      X.beginPath(); X.ellipse(p.x, p.y + 4, 46, 9, 0, 0, TAU); X.fill();
+
+      X.fillStyle = vgrad(0, p.top + 44, p.y, "rgba(20,36,52,.98)", "rgba(8,15,24,.98)");
+      rr(p.x - 26, p.top + 40, 52, p.y - p.top - 40, 6); X.fill();
+      X.strokeStyle = rgba(p.c, .3); X.lineWidth = 1.2; X.stroke();
+
+      // saat halkası
+      X.save();
+      X.beginPath(); X.arc(p.x, p.top + 34, 30, 0, TAU);
+      X.fillStyle = "rgba(8,16,26,.98)"; X.fill();
+      X.strokeStyle = rgba(p.c, .55 + .25 * Math.sin(time * 2)); X.lineWidth = 2; X.stroke();
+      X.shadowColor = p.c; X.shadowBlur = 18;
+      X.beginPath(); X.arc(p.x, p.top + 34, 30, -Math.PI/2, -Math.PI/2 + TAU * ((time % 8) / 8));
+      X.strokeStyle = rgba(p.c, .85); X.lineWidth = 2.4; X.stroke();
+      X.restore();
+
+      X.textAlign = "center";
+      X.font = "700 12px ui-monospace,'Roboto Mono',monospace";
+      X.fillStyle = "#ffe9a8";
+      X.fillText(D.sistem?.slot_saati || "19:30", p.x, p.top + 34);
+      X.font = "700 7.5px -apple-system,Roboto,sans-serif";
+      X.fillStyle = rgba(p.c, .85);
+      X.fillText(p.label, p.x, p.top + 58);
+
+      // stand noktası
+      X.beginPath(); X.ellipse(stand.x, stand.y - 4, 16, 5, 0, 0, TAU);
+      X.fillStyle = rgba(p.c, .1); X.fill();
+    }
+
+    if (p.id === "yt"){
+      // duvara monte ekran
+      X.save();
+      X.shadowColor = "rgba(239,68,68,.35)"; X.shadowBlur = 30;
+      rr(p.x - p.w/2, p.top, p.w, p.h, 9);
+      X.fillStyle = vgrad(0, p.top, p.top + p.h, "rgba(14,24,36,.98)", "rgba(6,11,18,.98)"); X.fill();
+      X.restore();
+      X.strokeStyle = "rgba(239,68,68,.4)"; X.lineWidth = 1.4; X.stroke();
+
+      // oynat üçgeni
+      X.save();
+      X.beginPath(); X.moveTo(p.x - 16, p.top + 40); X.lineTo(p.x + 18, p.top + 58); X.lineTo(p.x - 16, p.top + 76); X.closePath();
+      X.fillStyle = "rgba(239,68,68,.92)"; X.shadowColor = "#ef4444"; X.shadowBlur = 22; X.fill();
+      X.restore();
+
+      X.textAlign = "center";
+      X.font = "700 10px -apple-system,Roboto,sans-serif";
+      X.fillStyle = "rgba(255,180,180,.9)";
+      X.fillText(p.label, p.x, p.top + 100);
+      X.font = "600 7.5px -apple-system,Roboto,sans-serif";
+      X.fillStyle = "#875f66";
+      X.fillText("yayın konsolu", p.x, p.top + 116);
+
+      // ekran altı raf + stand noktası
+      X.fillStyle = "rgba(6,12,20,.9)";
+      rr(p.x - 54, p.top + p.h + 4, 108, 10, 4); X.fill();
+      X.strokeStyle = "rgba(239,68,68,.2)"; X.lineWidth = 1; X.stroke();
+
+      X.beginPath(); X.ellipse(stand.x, stand.y - 6, 34, 10, 0, 0, TAU);
+      X.fillStyle = "rgba(239,68,68,.08)"; X.fill();
+    }
+  });
+}
+
+/* ── çizim: masa ── */
+function drawDesk(w){
+  const r = ROWS[w.row], s = r.s, cx = COLS[w.col], dy = r.y;
+  const dw = 176 * s, dh = 13 * s;
+  const col = w.c;
+
+  // zemin gölgesi
+  X.fillStyle = "rgba(0,0,0,.42)";
+  X.beginPath(); X.ellipse(cx, dy + 36 * s, dw * .52, 13 * s, 0, 0, TAU); X.fill();
+
+  // masa üstü (hafif perspektif)
+  X.beginPath();
+  X.moveTo(cx - dw/2 + 6 * s, dy - dh);
+  X.lineTo(cx + dw/2 - 6 * s, dy - dh);
+  X.lineTo(cx + dw/2, dy);
+  X.lineTo(cx - dw/2, dy);
+  X.closePath();
+  X.fillStyle = vgrad(cx, dy - dh, dy, "rgba(46,66,84,.98)", "rgba(24,38,52,.98)");
+  X.fill();
+  X.strokeStyle = rgba(col, .36); X.lineWidth = 1.1; X.stroke();
+
+  // ön panel / çekmece
+  const panelTop = dy + 1, panelH = 30 * s;
+  rr(cx - dw/2 + 2 * s, panelTop, dw - 4 * s, panelH, 3);
+  X.fillStyle = vgrad(cx, panelTop, panelTop + panelH, "rgba(19,32,45,.98)", "rgba(9,16,25,.98)"); X.fill();
+  X.strokeStyle = "rgba(120,190,240,.12)"; X.lineWidth = 1; X.stroke();
+  X.fillStyle = "rgba(120,190,240,.16)";
+  X.fillRect(cx - dw * .34, panelTop + panelH * .42, dw * .28, 2);
+  X.fillRect(cx + dw * .06, panelTop + panelH * .42, dw * .28, 2);
+
+  // bacaklar
+  X.strokeStyle = "rgba(15,26,38,.95)"; X.lineWidth = 4 * s;
+  X.beginPath(); X.moveTo(cx - dw/2 + 8 * s, panelTop + panelH); X.lineTo(cx - dw/2 + 8 * s, dy + 46 * s); X.stroke();
+  X.beginPath(); X.moveTo(cx + dw/2 - 8 * s, panelTop + panelH); X.lineTo(cx + dw/2 - 8 * s, dy + 46 * s); X.stroke();
+
+  // laptop (solda)
+  const lx = cx - dw * .28, ly = dy - dh;
+  X.fillStyle = "rgba(6,11,18,.98)";
+  rr(lx - 17 * s, ly - 24 * s, 34 * s, 21 * s, 2.5); X.fill();
+  X.fillStyle = rgba(col, .22);
+  rr(lx - 14 * s, ly - 21 * s, 28 * s, 15 * s, 1.5); X.fill();
+  X.fillStyle = rgba(col, .75);
+  X.fillRect(lx - 11 * s, ly - 17 * s, 22 * s, 1.4 * s);
+  X.fillRect(lx - 11 * s, ly - 13.5 * s, 15 * s, 1.2 * s);
+  X.fillStyle = "rgba(28,42,58,.98)";
+  rr(lx - 19 * s, ly - 3 * s, 38 * s, 3.6 * s, 1.6); X.fill();
+
+  // fincan (sağda)
+  const mx = cx + dw * .3, my = dy - dh - 1;
+  X.fillStyle = "rgba(210,230,245,.75)";
+  rr(mx - 5 * s, my - 9 * s, 10 * s, 9 * s, 2); X.fill();
+  X.strokeStyle = "rgba(210,230,245,.6)"; X.lineWidth = 1.2 * s;
+  X.beginPath(); X.arc(mx + 6 * s, my - 5 * s, 3.2 * s, -1.2, 1.2); X.stroke();
+  X.fillStyle = "rgba(120,80,40,.85)";
+  X.beginPath(); X.arc(mx, my - 7.5 * s, 3.4 * s, 0, TAU); X.fill();
+
+  // kağıtlar
+  X.save();
+  X.translate(cx + 2 * s, dy - dh - 1);
+  X.rotate(-0.08);
+  X.fillStyle = "rgba(235,244,252,.8)";
+  X.fillRect(-14 * s, -7 * s, 26 * s, 7 * s);
+  X.fillStyle = "rgba(90,120,145,.55)";
+  X.fillRect(-11 * s, -5 * s, 18 * s, 1.1 * s);
+  X.fillRect(-11 * s, -2.8 * s, 13 * s, 1.1 * s);
+  X.restore();
+
+  // isim plakası + durum
+  X.textAlign = "center";
+  X.font = `700 ${Math.max(6.6, 7.6 * s)}px -apple-system,Roboto,sans-serif`;
+  X.fillStyle = rgba(col, .82);
+  X.fillText(w.label, cx, dy + panelH + 10 * s);
+  const st = accent(w.id);
+  X.beginPath(); X.arc(cx - (X.measureText(w.label).width/2) - 6 * s, dy + panelH + 10 * s, 2 * s + .4, 0, TAU);
+  X.fillStyle = st; X.shadowColor = st; X.shadowBlur = 6; X.fill(); X.shadowBlur = 0;
+}
+
+/* ── çizim: maskot ── */
+function drawMascot(m){
+  const s = scaleAtY(m.y) * 0.94;
+  const walking = m.walking;
+  const bob = walking ? Math.sin(time*13)*1.5 : Math.sin(time*2.2 + m.phase)*0.7;
+  const jump = m.hop > 0 ? Math.sin((1 - m.hop) * Math.PI) * 9 : 0;
+  const col = m.col;
+
+  X.save();
+  X.translate(m.x, m.y + bob - jump);
+  X.scale(s, s);
+
+  // gölge
+  X.fillStyle = "rgba(0,0,0,.34)";
+  X.beginPath(); X.ellipse(0, 26 + jump*.35, 13, 4.2, 0, 0, TAU); X.fill();
+
+  // bacaklar
+  const swing = walking ? Math.sin(time*13)*4.6 : Math.sin(time*3 + m.phase)*0.7;
+  X.strokeStyle = "#0a1624"; X.lineWidth = 4.4; X.lineCap = "round";
+  X.beginPath(); X.moveTo(-5, 8); X.lineTo(-5 + swing, 21); X.stroke();
+  X.beginPath(); X.moveTo(5, 8); X.lineTo(5 - swing, 21); X.stroke();
+
+  // ayakkabı
+  X.strokeStyle = rgba(col, .55); X.lineWidth = 3;
+  X.beginPath(); X.moveTo(-5 + swing, 21); X.lineTo(-2 + swing, 21.5); X.stroke();
+  X.beginPath(); X.moveTo(5 - swing, 21); X.lineTo(8 - swing, 21.5); X.stroke();
+
+  // gövde
+  const bg = X.createLinearGradient(0, -10, 0, 16);
+  bg.addColorStop(0, rgba(col, .98)); bg.addColorStop(1, rgba(col, .55));
+  rr(-11.5, -8, 23, 20, 8.5); X.fillStyle = bg; X.fill();
+  X.strokeStyle = rgba(col, .9); X.lineWidth = 1; X.stroke();
+  // yaka
+  X.strokeStyle = "rgba(255,255,255,.22)"; X.lineWidth = 1.2;
+  X.beginPath(); X.moveTo(-4, -7.5); X.lineTo(0, -3.5); X.lineTo(4, -7.5); X.stroke();
+
+  // kollar
+  X.strokeStyle = rgba(col, .92); X.lineWidth = 3.5;
+  let la, ra;
+  if (walking){ la = Math.sin(time*13)*3; ra = -la; }
+  else { la = 2 + Math.sin(time*9 + m.phase)*2.2; ra = 2 + Math.sin(time*9 + m.phase + 1.6)*2.2; }
+  X.beginPath(); X.moveTo(-11, -2); X.lineTo(-15.5, 4 + la); X.stroke();
+  X.beginPath(); X.moveTo(11, -2); X.lineTo(15.5, 4 + ra); X.stroke();
+
+  // kafa
+  X.beginPath(); X.arc(0, -17, 12, 0, TAU);
+  const hg = X.createRadialGradient(-3, -23, 2, 0, -17, 15);
+  hg.addColorStop(0, "rgba(255,255,255,.55)"); hg.addColorStop(.35, col); hg.addColorStop(1, rgba(col, .82));
+  X.fillStyle = hg; X.fill();
+  X.strokeStyle = rgba(col, .95); X.lineWidth = 1; X.stroke();
+
+  // gözler
+  const open = m.blink > 0 ? .18 : 1;
+  [-4.4, 4.4].forEach(dx => {
+    X.beginPath(); X.ellipse(dx, -17.5, 2.6, 2.8*open, 0, 0, TAU);
+    X.fillStyle = "#f4fbff"; X.fill();
+    X.beginPath(); X.arc(dx + .6, -17.2, 1.3*open + .2, 0, TAU);
+    X.fillStyle = "#0a1622"; X.fill();
+    X.beginPath(); X.arc(dx - .4, -18.6, .75, 0, TAU);
+    X.fillStyle = "rgba(255,255,255,.9)"; X.fill();
+  });
+
+  // gülümseme + yanak
+  X.strokeStyle = "rgba(10,25,40,.5)"; X.lineWidth = 1.1;
+  X.beginPath(); X.arc(0, -12.6, 3.4, .25, Math.PI - .25); X.stroke();
+  [-8, 8].forEach(dx => {
+    X.beginPath(); X.arc(dx, -11.5, 2, 0, TAU);
+    X.fillStyle = "rgba(255,140,180,.3)"; X.fill();
+  });
+
+  // anten
+  X.strokeStyle = rgba(col, .85); X.lineWidth = 1.4;
+  X.beginPath(); X.moveTo(0, -28.5); X.lineTo(0, -33.5); X.stroke();
+  X.beginPath(); X.arc(0, -35, 2.7, 0, TAU);
+  X.fillStyle = col; X.shadowColor = col; X.shadowBlur = 11; X.fill(); X.shadowBlur = 0;
+
+  // kulaklık (çalışırken takılı)
+  if (!walking){
+    X.strokeStyle = "rgba(200,225,245,.5)"; X.lineWidth = 2;
+    X.beginPath(); X.arc(0, -17, 13.5, Math.PI * 1.06, Math.PI * 1.94); X.stroke();
+    X.beginPath(); X.arc(-12.6, -16, 3.2, 0, TAU); X.fillStyle = "rgba(16,28,42,.95)"; X.fill();
+    X.beginPath(); X.arc(12.6, -16, 3.2, 0, TAU); X.fill();
+  }
+
+  // taşıdığı evrak
+  if (walking){
+    rr(-6.5, 1, 13, 11.5, 2);
+    X.fillStyle = "#fbbf24"; X.shadowColor = "#fbbf24"; X.shadowBlur = 12; X.fill();
+    X.shadowBlur = 0;
+    X.strokeStyle = "rgba(120,60,0,.45)"; X.lineWidth = 1;
+    X.beginPath(); X.moveTo(-4, 4.4); X.lineTo(4, 4.4); X.stroke();
+    X.beginPath(); X.moveTo(-4, 7); X.lineTo(2, 7); X.stroke();
+  }
+
+  // teslim kıvılcımı
+  if (m.flair > 0){
+    X.globalAlpha = Math.min(1, m.flair*1.6);
+    X.translate(0, -46 - (1 - m.flair)*12);
+    X.textAlign = "center";
+    X.font = "16px -apple-system,Roboto,'Noto Color Emoji',sans-serif";
+    X.fillText(m.emoji, 0, 0);
+  }
+
+  X.restore();
+}
+
+/* ── çizim: uçan evrak / parçacık / balon ── */
+function drawPackets(){
+  jobs.forEach(j => {
+    if (j.carrier) return;
+    const p = posAt(j.phase === 2 ? j.back : j.path, j.s);
+    const y = p.y - 12 + Math.sin(time*8)*2;
+    rr(p.x - 6, y - 6, 12, 11, 2);
+    X.fillStyle = "#fbbf24"; X.shadowColor = "#fbbf24"; X.shadowBlur = 16; X.fill();
+    X.shadowBlur = 0;
+  });
+}
+function drawParticles(){
+  parts.forEach(q => {
+    X.globalAlpha = Math.max(0, q.life);
+    X.fillStyle = q.c;
+    X.beginPath(); X.arc(q.x, q.y, q.r, 0, TAU); X.fill();
+  });
+  confetti.forEach(q => {
+    X.save();
+    X.globalAlpha = Math.min(1, q.life);
+    X.translate(q.x, q.y); X.rotate(q.rot);
+    X.fillStyle = q.c; X.fillRect(-q.w/2, -2, q.w, 4);
+    X.restore();
+  });
+  X.globalAlpha = 1;
+}
+function wrapText(text, max){
+  const words = String(text).split(" ");
+  const lines = []; let cur = "";
+  words.forEach(w => {
+    if ((cur + " " + w).trim().length > max){ lines.push(cur.trim()); cur = w; }
+    else cur += " " + w;
+  });
+  if (cur.trim()) lines.push(cur.trim());
+  return lines.slice(0, 2);
+}
+function drawBubble(){
+  if (!bubble) return;
+  const S = bubble.at;
+  const lines = wrapText(bubble.text, 34);
+  const w = Math.min(310, Math.max(150, Math.max(...lines.map(l => l.length)) * 5.6 + 26));
+  const h = 16 + lines.length * 14;
+  const ax = S.x;
+  const ay = S.type === "desk" ? S.y - 54 : S.prop.top + 4;
+  const bx = Math.max(12 + w/2, Math.min(W - 12 - w/2, ax));
+  const by = Math.max(66 + h/2, Math.min(H - 60 - h/2, ay - h/2));
+
+  const a = Math.min(1, Math.min(bubble.t*5, (bubble.life - bubble.t)*4));
+  X.save();
+  X.globalAlpha = Math.max(0, a);
+  X.shadowColor = rgba(S.c, .5); X.shadowBlur = 18;
+  rr(bx - w/2, by - h/2, w, h, 9);
+  X.fillStyle = "rgba(8,18,28,.96)"; X.fill();
+  X.shadowBlur = 0;
+  X.strokeStyle = rgba(S.c, .5); X.lineWidth = 1.1; X.stroke();
+
+  X.beginPath();
+  X.moveTo(bx - 5, by + h/2);
+  X.lineTo(bx + 5, by + h/2);
+  X.lineTo(bx, by + h/2 + 7);
+  X.closePath();
+  X.fillStyle = "rgba(8,18,28,.96)"; X.fill();
+
+  X.textAlign = "center";
+  X.font = "600 11px -apple-system,Roboto,sans-serif";
+  X.fillStyle = "#dcecf8";
+  lines.forEach((l, i) => X.fillText(l, bx, by - ((lines.length-1)*14)/2 + i*14));
+  X.restore();
+}
+
+/* ── ışık / vinyet ── */
+function drawLighting(){
+  const key = X.createRadialGradient(360, 120, 40, 360, 120, 700);
+  key.addColorStop(0, "rgba(120,210,255,.10)");
+  key.addColorStop(.5, "rgba(120,210,255,.03)");
+  key.addColorStop(1, "transparent");
+  X.fillStyle = key; X.fillRect(0, 0, W, H);
+
+  const v = X.createRadialGradient(640, 430, 280, 640, 430, 860);
+  v.addColorStop(0, "transparent"); v.addColorStop(.7, "rgba(2,5,10,.28)"); v.addColorStop(1, "rgba(2,5,10,.66)");
+  X.fillStyle = v; X.fillRect(0, 0, W, H);
+}
+
+/* ── ana çevrim ── */
+function frame(now){
+  if (!last) last = now;
+  let dt = (now - last)/1000; last = now;
+  if (dt > .1) dt = .1;
+  time += dt;
+
+  update(dt);
+  drawRoom();
+  drawWindow();
+  drawBoard();
+  drawProps();
+
+  WORKERS.forEach(drawDesk);
+  drawPackets();
+
+  Object.values(mascots).sort((a,b) => a.y - b.y).forEach(drawMascot);
+
+  drawParticles();
+  drawBubble();
+  drawLighting();
+
+  requestAnimationFrame(frame);
+}
+
+/* ── arayüz ── */
+function setMode(){
+  const canli = D.mod === "canli";
+  document.getElementById("mode").classList.toggle("canli", canli);
+  document.getElementById("modeText").textContent = canli ? "CANLI" : (D.mod_etiketi || "REPLAY");
+  document.getElementById("tkSrc").textContent = canli ? "CANLI AKIŞ" : "REPLAY · KAYITLI GERÇEK OLAYLAR";
+}
+let tkTimer = null;
+function ticker(ev){
+  const w = (D.isci || []).find(x => x.id === ev.isci);
+  const col = w ? accent(ev.isci) : "#22d3ee";
+  document.getElementById("tkTime").textContent = ev.t || "--:--";
+  const who = document.getElementById("tkWho");
+  who.textContent = ev.isci; who.style.color = col;
+  const msg = document.getElementById("tkMsg");
+  msg.style.opacity = 0;
+  clearTimeout(tkTimer);
+  tkTimer = setTimeout(() => { msg.textContent = ev.metin; msg.style.opacity = 1; }, 110);
+}
+function clockUI(){
+  const d = new Date();
+  document.getElementById("clock").textContent = `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+  document.getElementById("date").textContent = `${pad(d.getDate())} ${AYLAR[d.getMonth()]} ${d.getFullYear()}`;
+}
+
+/* ── replay ── */
+let replayIdx = -1;
+function startReplay(){
+  const akis = D.akis || [];
+  if (D.mod === "canli" || !akis.length) return;
+  replayIdx = -1;
+  const adim = () => {
+    replayIdx = (replayIdx + 1) % akis.length;
+    runEvent(akis[replayIdx]);
+  };
+  adim();
+  setInterval(adim, 5200);
+}
+
+/* ── ölçek ── */
+const stage = document.getElementById("stage");
+function fit(){
+  const s = Math.min(innerWidth/W, innerHeight/H);
+  stage.style.transform = `translate(-50%,-50%) scale(${s})`;
+}
+
+/* ── başlat ── */
+function boot(data){
+  D = data || FALLBACK;
+  buildMascots();
+  setMode(); clockUI();
+  setInterval(clockUI, 1000);
+  startReplay();
+  if (!last) requestAnimationFrame(frame);
+}
+function init(){
+  setupCanvas(); fit();
+  addEventListener("resize", fit);
+  fetch("./data/canli.json", { cache:"no-store" })
+    .then(r => { if (!r.ok) throw 0; return r.json(); })
+    .then(j => boot(j))
+    .catch(() => boot(FALLBACK));
+}
+document.getElementById("fs").addEventListener("click", () => {
+  if (!document.fullscreenElement) document.documentElement.requestFullscreen?.();
+  else document.exitFullscreen?.();
+});
+init();
+</script>
+</body>
+</html>

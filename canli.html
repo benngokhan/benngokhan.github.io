@@ -10,8 +10,8 @@
   *{box-sizing:border-box;margin:0;padding:0}
   html,body{height:100%;overflow:hidden;background:#040a10}
   body{font-family:-apple-system,"Segoe UI",Roboto,Arial,sans-serif;color:#dbe7f3;-webkit-font-smoothing:antialiased;user-select:none}
-  #stage{position:absolute;left:50%;top:50%;width:1280px;height:800px;transform-origin:center center;transform:translate(-50%,-50%);overflow:hidden}
-  #scene{position:absolute;inset:0;display:block}
+  #stage{position:absolute;inset:0;overflow:hidden}
+  #scene{position:absolute;left:50%;top:50%;width:1280px;height:800px;display:block;transform-origin:center center;transform:translate(-50%,-50%)}
 
   #top{position:absolute;left:0;right:0;top:0;height:56px;display:flex;align-items:center;gap:20px;justify-content:space-between;
        padding:0 18px;background:linear-gradient(180deg,rgba(4,10,16,.96) 0%,rgba(4,10,16,.5) 66%,transparent 100%);z-index:3}
@@ -49,6 +49,15 @@
       box-shadow:0 8px 26px rgba(0,0,0,.4);transition:opacity .5s,transform .5s}
   #sesHint.hide{opacity:0;transform:translateY(-6px);pointer-events:none}
   #sesHint b{color:#9debe7}
+
+  #sesStart{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:5;display:flex;flex-direction:column;
+      align-items:center;gap:5px;padding:18px 30px;border:1px solid rgba(157,235,231,.45);border-radius:18px;
+      background:rgba(6,20,26,.92);backdrop-filter:blur(12px);color:#dff6f3;box-shadow:0 14px 50px rgba(0,0,0,.55);
+      cursor:pointer;text-align:center;transition:opacity .5s,transform .5s}
+  #sesStart b{font-size:26px;line-height:1}
+  #sesStart span{font-size:14px;font-weight:700;letter-spacing:.08em}
+  #sesStart small{font-size:10px;color:#7d97ad}
+  #sesStart.hide{opacity:0;pointer-events:none;transform:translate(-50%,-50%) scale(.9)}
 
   .mono{font-family:ui-monospace,"Roboto Mono",Menlo,Consolas,monospace}
   #ticker{position:absolute;left:0;right:0;bottom:0;height:48px;display:flex;align-items:center;gap:10px;padding:0 20px;
@@ -91,6 +100,7 @@
   </header>
 
   <div id="sesHint"><b>🔊</b> Ofis ambiyansı için ekrana bir kez dokun</div>
+  <div id="sesStart" role="button" tabindex="0"><b>🔊</b><span>MÜZİĞİ BAŞLAT</span><small>ofis ambiyansı · sakin fon</small></div>
 
   <footer id="ticker">
     <span class="dot"></span>
@@ -256,8 +266,8 @@ const SES = (function(){
   let on = false, wanted = true;
 
   const store = {
-    read(){ try { return localStorage.getItem("bd-ses"); } catch(e){ return null; } },
-    write(v){ try { localStorage.setItem("bd-ses", v); } catch(e){} }
+    read(){ try { return localStorage.getItem("bd-ses-v3"); } catch(e){ return null; } },
+    write(v){ try { localStorage.setItem("bd-ses-v3", v); } catch(e){} }
   };
 
   function makeNoise(){
@@ -415,6 +425,8 @@ const SES = (function(){
     if (on){
       const h = document.getElementById("sesHint");
       if (h) h.classList.add("hide");
+      const s = document.getElementById("sesStart");
+      if (s) s.classList.add("hide");
     }
   }
 
@@ -477,11 +489,20 @@ const SES = (function(){
     const b = document.getElementById("ses");
     if (b) b.addEventListener("click", e => { e.stopPropagation(); toggle(); });
 
+    const start = document.getElementById("sesStart");
+    const hideStart = () => { if (start) start.classList.add("hide"); };
+    if (start){
+      const go = e => { e.stopPropagation(); wanted = true; enable(); hideStart(); };
+      start.addEventListener("click", go);
+      start.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") go(e); });
+    }
+
     const stored = store.read();
     wanted = stored !== "0";           // ilk ziyarette bir dokunuşla başlasın
     if (stored === "1") sync();
 
     const kick = () => {
+      hideStart();
       if (!on && wanted) enable();
     };
     document.addEventListener("pointerdown", kick, { passive: true });
@@ -1262,10 +1283,13 @@ function startReplay(){
 }
 
 /* ── ölçek ── */
-const stage = document.getElementById("stage");
+const sceneEl = document.getElementById("scene");
 function fit(){
-  const s = Math.min(innerWidth/W, innerHeight/H);
-  stage.style.transform = `translate(-50%,-50%) scale(${s})`;
+  const landscape = innerWidth >= innerHeight;
+  const s = landscape
+    ? Math.min(innerWidth/W, innerHeight/H)
+    : Math.min(innerHeight/W, innerWidth/H);
+  sceneEl.style.transform = `translate(-50%,-50%) scale(${s}) rotate(${landscape ? 0 : 90}deg)`;
 }
 
 /* ── başlat ── */
@@ -1280,6 +1304,7 @@ function boot(data){
 function init(){
   setupCanvas(); fit();
   addEventListener("resize", fit);
+  addEventListener("orientationchange", () => setTimeout(fit, 120));
   fetch("./data/canli.json", { cache:"no-store" })
     .then(r => { if (!r.ok) throw 0; return r.json(); })
     .then(j => boot(j))

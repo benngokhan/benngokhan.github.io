@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#050d13">
-<meta name="description" content="Bilgi Dozu üretim ofisinin canlı akışı: 9 maskot, gerçek yayın verileri ve sakin ofis ambiyansı.">
+<meta name="description" content="Bilgi Dozu üretim ofisinin canlı akışı: 9 maskot, gerçek yayın verileri ve sessiz ofis görünümü.">
 <title>Canlı Akış · Bilgi Dozu</title>
 <style>
   *{box-sizing:border-box;margin:0;padding:0}
@@ -36,30 +36,8 @@
   .badge.canli i{background:#8ef0c0;box-shadow:0 0 8px #8ef0c0}
   #date{font-size:10px;letter-spacing:.16em;color:#7d97ad;white-space:nowrap}
   #clock{font-size:13px;color:#cfe6f5;white-space:nowrap}
-  #ses,#fs{height:27px;border-radius:7px;border:1px solid rgba(150,220,230,.24);background:rgba(120,200,255,.06);
-      color:#9fb6c9;font-size:12px;cursor:pointer;line-height:1;display:inline-flex;align-items:center;justify-content:center}
-  #ses{padding:0 9px;gap:6px;font-size:9px;letter-spacing:.16em;font-weight:700}
-  #ses.on{color:#8ef0c0;border-color:rgba(142,240,192,.45);background:rgba(142,240,192,.08)}
-  #ses:hover,#fs:hover{color:#9debe7;border-color:rgba(157,235,231,.55)}
-  #fs{width:27px;font-size:13px}
-
-  #sesHint{position:absolute;right:18px;top:62px;z-index:4;display:flex;align-items:center;gap:8px;
-      border:1px solid rgba(157,235,231,.32);background:rgba(6,20,25,.86);backdrop-filter:blur(10px);
-      border-radius:20px;padding:7px 13px;font-size:10.5px;letter-spacing:.04em;color:#cfe6e4;
-      box-shadow:0 8px 26px rgba(0,0,0,.4);transition:opacity .5s,transform .5s}
-  #sesHint.hide{opacity:0;transform:translateY(-6px);pointer-events:none}
-  #sesHint b{color:#9debe7}
-
-  #sesStart{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:5;display:flex;flex-direction:column;
-      align-items:center;gap:7px;padding:26px 44px;border:1px solid rgba(157,235,231,.55);border-radius:20px;
-      background:rgba(6,20,26,.95);backdrop-filter:blur(12px);color:#dff6f3;box-shadow:0 14px 50px rgba(0,0,0,.6);
-      cursor:pointer;text-align:center;transition:opacity .5s,transform .5s;animation:pulse 2.2s ease-in-out infinite}
-  #sesStart b{font-size:32px;line-height:1}
-  #sesStart span{font-size:18px;font-weight:700;letter-spacing:.08em}
-  #sesStart small{font-size:11px;color:#9debe7}
-  #sesStart.hide{opacity:0;pointer-events:none;transform:translate(-50%,-50%) scale(.9);animation:none}
-  @keyframes pulse{0%,100%{box-shadow:0 14px 50px rgba(0,0,0,.6),0 0 0 0 rgba(157,235,231,.25)}
-                   50%{box-shadow:0 14px 50px rgba(0,0,0,.6),0 0 0 14px rgba(157,235,231,0)}}
+  #fs{height:27px;width:27px;border-radius:7px;border:1px solid rgba(150,220,230,.24);background:rgba(120,200,255,.06);color:#9fb6c9;font-size:13px;cursor:pointer;line-height:1;display:inline-flex;align-items:center;justify-content:center}
+  #fs:hover{color:#9debe7;border-color:rgba(157,235,231,.55)}
 
   .mono{font-family:ui-monospace,"Roboto Mono",Menlo,Consolas,monospace}
   #ticker{position:absolute;left:0;right:0;bottom:0;height:48px;display:flex;align-items:center;gap:10px;padding:0 20px;
@@ -71,7 +49,7 @@
   #ticker .src{margin-left:auto;font-size:8.5px;letter-spacing:.16em;color:#3f5a6e;flex:none}
 
   @media (max-width:1080px){#siteNav{display:none}}
-  @media (max-width:720px){#date{display:none}#ses span:last-child{display:none}#ses{padding:0;width:27px}}
+  @media (max-width:720px){#date{display:none}}
 
   @keyframes blink{0%,100%{opacity:1}50%{opacity:.25}}
 </style>
@@ -96,13 +74,10 @@
       <span class="badge" id="mode"><i></i><span id="modeText">REPLAY</span></span>
       <span id="date">—</span>
       <span id="clock" class="mono">--:--:--</span>
-      <button id="ses" title="Ofis sesi ve fon müziği" aria-pressed="false"><span id="sesIcon">🔇</span><span id="sesText">SES</span></button>
       <button id="fs" title="Tam ekran">⛶</button>
     </div>
   </header>
 
-  <div id="sesHint"><b>🔊</b> Ofis ambiyansı için ekrana bir kez dokun</div>
-  <div id="sesStart" role="button" tabindex="0"><b>🔊</b><span>MÜZİĞİ BAŞLAT</span><small>ofis ambiyansı · sakin fon</small></div>
 
   <footer id="ticker">
     <span class="dot"></span>
@@ -250,282 +225,6 @@ function vgrad(x, y0, y1, c0, c1){
   return g;
 }
 
-/* ═══════════════════════════════════════════════════════════════════
-   SES · yumuşak ofis uğultusu + koyu sakin fon + hafif evrak hışırtısı
-   Tarayıcı kuralı gereği ilk dokunuştan sonra başlar.
-   ═══════════════════════════════════════════════════════════════════ */
-const SES = (function(){
-  const AC = window.AudioContext || window.webkitAudioContext || null;
-  const CHORDS = [
-    [110.00, 164.81, 220.00, 261.63, 329.63],
-    [98.00, 146.83, 196.00, 246.94, 293.66],
-    [87.31, 130.81, 174.61, 220.00, 261.63],
-    [116.54, 174.61, 233.08, 293.66, 349.23]
-  ];
-  let ctx = null, master = null, wetIn = null, noise = null;
-  let padGain = null, padOsc = [], chordIdx = 0, chordTimer = null;
-  let chatTimer = null, clickTimer = null, clinkTimer = null;
-  let on = false, wanted = true;
-
-  const store = {
-    read(){ try { return localStorage.getItem("bd-ses-v3"); } catch(e){ return null; } },
-    write(v){ try { localStorage.setItem("bd-ses-v3", v); } catch(e){} }
-  };
-
-  function makeNoise(){
-    const len = Math.floor(ctx.sampleRate * 2);
-    const b = ctx.createBuffer(1, len, ctx.sampleRate);
-    const d = b.getChannelData(0);
-    for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
-    return b;
-  }
-  function makeImpulse(sec, decay){
-    const len = Math.floor(ctx.sampleRate * sec);
-    const b = ctx.createBuffer(2, len, ctx.sampleRate);
-    for (let c = 0; c < 2; c++){
-      const d = b.getChannelData(c);
-      for (let i = 0; i < len; i++){
-        d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, decay);
-      }
-    }
-    return b;
-  }
-
-  function build(){
-    ctx = new AC();
-    master = ctx.createGain();
-    master.gain.value = 0;
-    const comp = ctx.createDynamicsCompressor();
-    comp.threshold.value = -20; comp.knee.value = 24; comp.ratio.value = 3;
-    comp.attack.value = 0.02; comp.release.value = 0.4;
-    master.connect(comp); comp.connect(ctx.destination);
-
-    const rev = ctx.createConvolver();
-    rev.buffer = makeImpulse(2.6, 3);
-    wetIn = ctx.createGain(); wetIn.gain.value = 0.32;
-    rev.connect(wetIn); wetIn.connect(master);
-
-    noise = makeNoise();
-
-    // koyu ped: sadece sine, tiz harmoniği yok — uzun yumuşak geçiş
-    padGain = ctx.createGain(); padGain.gain.value = 0.62;
-    const lp = ctx.createBiquadFilter(); lp.type = "lowpass"; lp.frequency.value = 900; lp.Q.value = 0.4;
-    padGain.connect(lp); lp.connect(master);
-    const send = ctx.createGain(); send.gain.value = 0.2; lp.connect(send); send.connect(rev);
-
-    CHORDS[0].forEach((f, i) => {
-      const o = ctx.createOscillator();
-      o.type = "sine";
-      o.frequency.value = f;
-      o.detune.value = (Math.random() * 4 - 2);
-      const g = ctx.createGain();
-      g.gain.value = i === 0 ? 0.10 : 0.045;
-      o.connect(g); g.connect(padGain);
-      o.start();
-      padOsc.push(o);
-    });
-
-    startChatter();
-    startClicks();
-  }
-
-  function nextChord(){
-    chordIdx = (chordIdx + 1) % CHORDS.length;
-    const t = ctx.currentTime;
-    CHORDS[chordIdx].forEach((f, i) => {
-      padOsc[i].frequency.setTargetAtTime(f, t, 3.6);
-    });
-    chordTimer = setTimeout(nextChord, 14000);
-  }
-
-  function voice(t, vol, freq){
-    const src = ctx.createBufferSource(); src.buffer = noise;
-    const bp = ctx.createBiquadFilter(); bp.type = "bandpass";
-    bp.frequency.value = freq; bp.Q.value = 3.2;
-    const g = ctx.createGain();
-    const dur = 0.07 + Math.random() * 0.09;
-    g.gain.setValueAtTime(0.0001, t);
-    g.gain.linearRampToValueAtTime(vol, t + 0.02);
-    g.gain.exponentialRampToValueAtTime(0.0005, t + dur);
-    src.connect(bp); bp.connect(g);
-    if (ctx.createStereoPanner){
-      const p = ctx.createStereoPanner();
-      p.pan.value = (Math.random() * 2 - 1) * 0.75;
-      g.connect(p); p.connect(master); p.connect(wetIn);
-    } else {
-      g.connect(master); g.connect(wetIn);
-    }
-    src.start(t); src.stop(t + dur + 0.04);
-  }
-
-  function startChatter(){
-    if (!on) return;
-    clearTimeout(chatTimer);
-    const run = () => {
-      if (!on) return;
-      const t0 = ctx.currentTime + 0.04;
-      const n = 1 + Math.floor(Math.random() * 3);
-      let t = t0;
-      for (let i = 0; i < n; i++){
-        voice(t, 0.028 + Math.random() * 0.014, 320 + Math.random() * 260);
-        t += 0.13 + Math.random() * 0.17;
-      }
-      chatTimer = setTimeout(run, 2600 + Math.random() * 4200);
-    };
-    chatTimer = setTimeout(run, 800);
-  }
-
-  function startClicks(){
-    if (!on) return;
-    clearTimeout(clickTimer); clearTimeout(clinkTimer);
-    const keys = () => {
-      if (!on) return;
-      const t0 = ctx.currentTime + 0.02;
-      const n = 1 + Math.floor(Math.random() * 3);
-      for (let i = 0; i < n; i++){
-        const t = t0 + i * (0.08 + Math.random() * 0.12);
-        const src = ctx.createBufferSource(); src.buffer = noise;
-        const lp = ctx.createBiquadFilter(); lp.type = "lowpass"; lp.frequency.value = 1800;
-        const g = ctx.createGain();
-        g.gain.setValueAtTime(0.0001, t);
-        g.gain.linearRampToValueAtTime(0.014, t + 0.008);
-        g.gain.exponentialRampToValueAtTime(0.0004, t + 0.06);
-        src.connect(lp); lp.connect(g); g.connect(master);
-        src.start(t); src.stop(t + 0.08);
-      }
-      clickTimer = setTimeout(keys, 6500 + Math.random() * 9000);
-    };
-    clickTimer = setTimeout(keys, 3500);
-  }
-
-  function startMurmur(){
-    const src = ctx.createBufferSource();
-    src.buffer = noise; src.loop = true;
-    const bp = ctx.createBiquadFilter(); bp.type = "bandpass";
-    bp.frequency.value = 500; bp.Q.value = 0.6;
-    const lp = ctx.createBiquadFilter(); lp.type = "lowpass"; lp.frequency.value = 1400;
-    const g = ctx.createGain(); g.gain.value = 0.05;
-    const lfo = ctx.createOscillator(); lfo.frequency.value = 0.055;
-    const lg = ctx.createGain(); lg.gain.value = 0.014;
-    lfo.connect(lg); lg.connect(g.gain);
-    src.connect(bp); bp.connect(lp); lp.connect(g);
-    g.connect(master);
-    const send = ctx.createGain(); send.gain.value = 0.18; g.connect(send); send.connect(wetIn);
-    src.start(); lfo.start();
-  }
-
-  function sync(){
-    const b = document.getElementById("ses");
-    if (b){
-      b.classList.toggle("on", on);
-      b.setAttribute("aria-pressed", on ? "true" : "false");
-      b.title = on ? "Sesi kapat" : "Ofis sesi ve fon müziği";
-    }
-    const i = document.getElementById("sesIcon"), t = document.getElementById("sesText");
-    if (i) i.textContent = on ? "🔊" : "🔇";
-    if (t) t.textContent = on ? "AÇIK" : "SES";
-    if (on){
-      const h = document.getElementById("sesHint");
-      if (h) h.classList.add("hide");
-      const s = document.getElementById("sesStart");
-      if (s) s.classList.add("hide");
-    }
-  }
-
-  function enable(){
-    if (on || !wanted) return;
-    if (!AC) return;
-    try {
-      if (!ctx) build();
-      if (ctx.state === "suspended") ctx.resume();
-      on = true;
-      master.gain.cancelScheduledValues(ctx.currentTime);
-      master.gain.setTargetAtTime(0.7, ctx.currentTime, 0.6);
-      if (!chordTimer) chordTimer = setTimeout(nextChord, 14000);
-      startChatter(); startClicks();
-      store.write("1");
-      sync();
-    } catch(e){ on = false; }
-  }
-  function disable(){
-    if (!ctx || !on) return;
-    on = false;
-    clearTimeout(chordTimer); chordTimer = null;
-    clearTimeout(chatTimer); clearTimeout(clickTimer); clearTimeout(clinkTimer);
-    master.gain.cancelScheduledValues(ctx.currentTime);
-    master.gain.setTargetAtTime(0, ctx.currentTime, 0.35);
-    store.write("0");
-    sync();
-  }
-  function toggle(){
-    wanted = true;
-    if (on) disable(); else enable();
-  }
-
-  function chime(){
-    if (!on || !ctx) return;
-    const t = ctx.currentTime;
-    const o = ctx.createOscillator(); o.type = "sine"; o.frequency.value = 392.00;
-    const g = ctx.createGain();
-    g.gain.setValueAtTime(0.0001, t);
-    g.gain.linearRampToValueAtTime(0.025, t + 0.08);
-    g.gain.exponentialRampToValueAtTime(0.0004, t + 0.55);
-    o.connect(g); g.connect(master); g.connect(wetIn);
-    o.start(t); o.stop(t + 0.6);
-  }
-  function rustle(){
-    if (!on || !ctx) return;
-    const t = ctx.currentTime;
-    const src = ctx.createBufferSource(); src.buffer = noise;
-    const bp = ctx.createBiquadFilter(); bp.type = "bandpass";
-    bp.frequency.value = 1200; bp.Q.value = 0.8;
-    const g = ctx.createGain();
-    g.gain.setValueAtTime(0.0001, t);
-    g.gain.linearRampToValueAtTime(0.02, t + 0.07);
-    g.gain.exponentialRampToValueAtTime(0.0004, t + 0.42);
-    src.connect(bp); bp.connect(g); g.connect(master);
-    src.start(t); src.stop(t + 0.36);
-  }
-
-  function boot(){
-    const b = document.getElementById("ses");
-    if (b) b.addEventListener("click", e => { e.stopPropagation(); toggle(); });
-
-    const start = document.getElementById("sesStart");
-    const hideStart = () => { if (start) start.classList.add("hide"); };
-    if (start){
-      const go = e => { e.stopPropagation(); wanted = true; enable(); hideStart(); };
-      start.addEventListener("click", go);
-      start.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") go(e); });
-    }
-
-    const stored = store.read();
-    wanted = stored !== "0";           // ilk ziyarette bir dokunuşla başlasın
-    if (stored === "1") sync();
-
-    const kick = () => {
-      hideStart();
-      if (!on && wanted) enable();
-    };
-    document.addEventListener("pointerdown", kick, { passive: true });
-    document.addEventListener("touchstart", kick, { passive: true });
-    document.addEventListener("mousedown", kick);
-    document.addEventListener("click", kick);
-    document.addEventListener("keydown", kick);
-
-    document.addEventListener("visibilitychange", () => {
-      if (!ctx) return;
-      if (document.hidden){
-        if (ctx.state === "running") ctx.suspend();
-      } else if (on){
-        ctx.resume();
-      }
-    });
-  }
-
-  return { boot, chime, rustle, toggle };
-})();
-SES.boot();
 
 /* ── yol ── */
 function mkPath(pts){
@@ -603,7 +302,6 @@ function runEvent(ev){
   if (A === B){ arrive(B, ev); return; }
 
   const carrier = mascots[A.id] || null;
-  SES.rustle();
   const item = { A, B, ev, carrier };
   if (carrier && (carrier.walking || jobs.some(j => j.carrier === carrier))) pending.push(item);
   else startJob(item);
@@ -623,7 +321,6 @@ function arrive(S, ev){
   burst(S);
   if (/yayınlandı|yayinlandi/.test(ev.metin)) confettiBurst(S);
   bubble = { text: ev.metin, t: 0, life: 3.8, at: S };
-  SES.chime();
   ticker(ev);
 }
 
@@ -1293,8 +990,7 @@ function fit(){
   const vv = window.visualViewport;
   const w = (vv && vv.width) || innerWidth;
   const h = (vv && vv.height) || innerHeight;
-  const portrait = h > w;
-  const s = Math.min(w / W * (portrait ? 1.35 : 1), h / H);
+  const s = Math.min(w / W, h / H);
   sceneEl.style.transform = `translate(-50%,-50%) scale(${s})`;
 }
 

@@ -259,10 +259,10 @@
         <div class="alert-strip" :class="stale ? 'warn' : 'ok'">
           <el-icon><component :is="stale ? 'WarningFilled' : 'CircleCheckFilled'" /></el-icon>
           <span v-if="stale">
-            Telemetri {{ telemetryAgeText }} güncellendi. 30 dakikalık döngü gecikmiş olabilir —
+            Telemetri {{ telemetryAgeText }} güncellendi. telemetri güncellemesi gecikmiş olabilir —
             <span class="link-btn" @click="triggerTelemetry">senkronu elle çalıştır</span>.
           </span>
-          <span v-else>30 dakikalık telemetri &amp; işçi döngüsü sağlıklı. Son güncelleme {{ telemetry.generated_at }}.</span>
+          <span v-else>Telemetri yakın zamanda güncellendi; işçi sağlığı ayrıca doğrulanmalıdır. Son güncelleme {{ telemetry.generated_at }}.</span>
         </div>
 
         <div class="grid c4">
@@ -270,25 +270,25 @@
             <div class="bar"></div>
             <div class="k"><el-icon><VideoCamera /></el-icon> Hazır Shorts</div>
             <div class="v">{{ q.ready_shorts ?? '—' }}</div>
-            <div class="d">9:16 dikey video kuyrukta hazır</div>
+            <div class="d">Tablo ve Drive eşleşmesine göre hazır</div>
           </div>
           <div class="stat green">
             <div class="bar"></div>
             <div class="k"><el-icon><Timer /></el-icon> Yayın Stoğu</div>
-            <div class="v">{{ q.ready_shorts ?? q.days_of_stock ?? '—' }}<span style="font-size:14px"> gün</span></div>
-            <div class="d">her gün 19:30 TR · sıradaki {{ q.next_short || '—' }}</div>
+            <div class="v">{{ q.days_of_stock ?? '—' }}<span style="font-size:14px"> gün</span></div>
+            <div class="d">günde bir yayın varsayımı · sıradaki {{ q.next_short || '—' }}</div>
           </div>
           <div class="stat orange">
             <div class="bar"></div>
             <div class="k"><el-icon><Picture /></el-icon> Eksik Kapak</div>
             <div class="v">{{ (q.missing_covers || []).length }}</div>
-            <div class="d">{{ (q.missing_covers || []).join(', ') || 'Tüm hazır videoların kapağı tam' }}</div>
+            <div class="d">{{ (q.missing_covers || []).join(', ') || 'Drive’da bulunan yayımlanmamış videolar için eksik tespit edilmedi' }}</div>
           </div>
           <div class="stat" :class="successRate !== null && successRate < 80 ? 'red' : 'grey'">
             <div class="bar"></div>
             <div class="k"><el-icon><DataAnalysis /></el-icon> Otomasyon Sağlığı</div>
             <div class="v">{{ successRate === null ? '—' : '%' + successRate }}</div>
-            <div class="d">son {{ s.runs.length }} koşu · 24s içinde {{ uploads24h }} yayın</div>
+            <div class="d">son yüklenen {{ s.runs.length }} koşu · son 24s {{ uploads24h }} başarılı yükleyici koşusu (yayın doğrulaması değil)</div>
           </div>
         </div>
 

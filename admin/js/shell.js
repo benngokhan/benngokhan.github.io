@@ -89,7 +89,7 @@
           </el-form>
           <div class="login-hint">
             Bu panel yalnızca içerik sahibine açıktır. Şifre, GitHub erişim anahtarını yerel olarak çözer;
-            anahtar hiçbir yere gönderilmez, düz metin olarak saklanmaz.
+            anahtar GitHub API isteklerinde kullanılır ve oturum için tarayıcı depolamasında düz metin tutulur.
           </div>
           <div class="login-foot">benngokhan/yt_auto_uploader · Bilgi Dozu Otomasyonu</div>
         </div>

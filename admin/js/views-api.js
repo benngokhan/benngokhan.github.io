@@ -54,19 +54,22 @@
       durumRenk(s) {
         return ({ ok: '#67c23a', yok: '#909399', gecersiz: '#f56c6c', hata: '#e6a23c' })[s] || '#909399';
       },
+      kotaGuvenilir(s) { return s.ad === 'Google Drive'; },
       // KALAN KOTA YÜZDESİ (Drive tarzı: dolu yeşil çubuk = bol kota var, azaldıkça turuncu/kırmızı)
       kalanYuzde(s) {
+        if (!this.kotaGuvenilir(s)) return null;
         let lim = s.limit;
         let kal = s.kalan;
         if ((s.ad === 'GitHub' || s.ad === 'GitHub Actions') && s.actions_limit) {
           lim = s.actions_limit;
           kal = s.actions_kalan;
         }
-        if (!lim || lim <= 0) return s.durum === 'ok' ? 100 : 0;
+        if (!Number.isFinite(Number(lim)) || Number(lim) <= 0) return null;
         if (kal === null || kal === undefined) {
           if (s.kullanilan !== null && s.kullanilan !== undefined) kal = Math.max(0, lim - s.kullanilan);
-          else return s.durum === 'ok' ? 100 : 0;
+          else return null;
         }
+        if (!Number.isFinite(Number(kal))) return null;
         return Math.max(0, Math.min(100, (Number(kal) / Number(lim)) * 100));
       },
       barRenk(kalanPct, durum) {
@@ -76,7 +79,8 @@
         return '#67c23a';
       },
       kalanMetin(s) {
-        if (s.ad === 'Google Drive') return this.boyut(s.kalan) + ' boş / ' + this.boyut(s.limit);
+        if (!this.kotaGuvenilir(s)) return 'Kalan kota doğrulanamadı';
+        if (s.ad === 'Google Drive') return s.kalan == null || !s.limit ? 'Kalan kota bilinmiyor' : this.boyut(s.kalan) + ' boş / ' + this.boyut(s.limit);
         if ((s.ad === 'GitHub' || s.ad === 'GitHub Actions') && s.actions_limit !== undefined) {
           return this.sayi(s.actions_kalan) + ' / ' + this.sayi(s.actions_limit) + ' dk kalan';
         }
@@ -84,6 +88,8 @@
         return this.sayi(s.kalan) + (s.limit ? ' / ' + this.sayi(s.limit) : '') + (s.birim ? ' · ' + s.birim : '');
       },
       kullanimMetin(s) {
+        if (!this.kotaGuvenilir(s)) return '';
+        if (s.kullanilan == null && s.kalan == null) return '';
         if (s.ad === 'Google Drive' && s.limit) {
           const doluPct = ((s.kullanilan || 0) / s.limit) * 100;
           return `Kullanılan: ${this.boyut(s.kullanilan)} (%${doluPct.toFixed(1)} dolu)`;
@@ -112,9 +118,9 @@
         const out = [];
         if (s.actions_kosu !== undefined) out.push(`Bu ay ${s.actions_kosu} koşu`);
         if (s.api_kalan !== undefined && s.api_limit !== undefined) out.push(`Saatlik REST: ${this.sayi(s.api_kalan)}/${this.sayi(s.api_limit)}`);
-        if (s.bugun_yukleme !== undefined) out.push(`Bugün ${s.bugun_yukleme} Shorts yüklendi`);
+        if (s.bugun_yukleme !== undefined) out.push(`Kayıtlarda bugün ${s.bugun_yukleme} yükleme (doğrulanmamış)`);
         if (s.reset_iso) out.push('Sıfırlanma: ' + s.reset_iso.slice(0, 10));
-        if (s.model_sayisi !== undefined) out.push(`${s.model_sayisi} aktif model`);
+        if (s.model_sayisi !== undefined) out.push(`${s.model_sayisi} listelenen model`);
         if (s.bot) out.push(s.bot);
         if (s.hesap) out.push(s.hesap);
         return out;
@@ -143,7 +149,7 @@
             clearInterval(t);
             this.beklemede = false;
             if (this.veri && this.veri.zaman !== once) {
-              this.s.notify('success', 'Tüm API kotaları canlı olarak güncellendi.');
+              this.s.notify('success', 'API telemetrisi güncellendi; kota doğruluğu servise göre değişir.');
             }
           }
         }, 8000);
@@ -151,7 +157,7 @@
       async yenile() {
         try {
           await this.s.repoDispatch('api_kota', {});
-          this.s.notify('success', 'Canlı kota ölçümü başlatıldı (~35 sn içinde güncellenir).');
+          this.s.notify('success', 'API telemetrisi güncellemesi başlatıldı.');
           this.bekle();
         } catch (e) {
           this.s.notify('error', 'Tetiklenemedi: ' + (e.message || e));
@@ -183,7 +189,7 @@
             };
             this.s.notify('error', this.kaydetSonuc.mesaj);
           } else {
-            this.kaydetSonuc = { ok: true, mesaj: `${hedefAd} iş akışına iletildi; kota verileri arka planda tazeleniyor.` };
+            this.kaydetSonuc = { ok: false, mesaj: `${hedefAd} için sonuç zamanında doğrulanamadı. GitHub Secrets durumunu kontrol edin.` };
             this.bekle();
           }
         } catch (e) {
@@ -214,7 +220,7 @@
         <div class="page-head">
           <div>
             <h2>API &amp; Kotalar</h2>
-            <p>Aktif tüm servislerin gerçek kalan kotaları ve doluluk çubukları · Son ölçüm: {{ veri ? trZaman(veri.zaman) : '—' }}</p>
+            <p>Servis durumu ve doğrulanabilen depolama kotası · Son ölçüm: {{ veri ? trZaman(veri.zaman) : '—' }}</p>
           </div>
           <div class="head-actions">
             <el-button size="small" icon="Refresh" :loading="yukleniyor" @click="yukle()">Yeniden oku</el-button>
@@ -261,7 +267,7 @@
               <div style="font-size:18px;font-weight:700;margin-bottom:6px">{{ kalanMetin(sv) }}</div>
 
               <!-- Drive tarzı kalan kapasite çubuğu (her kartta görünür) -->
-              <div style="display:flex;align-items:center;gap:10px;margin:8px 0">
+              <div v-if="kalanYuzde(sv) !== null" style="display:flex;align-items:center;gap:10px;margin:8px 0">
                 <div style="flex:1;height:9px;background:#ebeef5;border-radius:5px;overflow:hidden">
                   <div :style="{
                     width: kalanYuzde(sv) + '%',
@@ -287,7 +293,9 @@
                 {{ kullanimMetin(sv) }}
               </div>
 
-              <div v-if="sv.yenilenme"
+              <div v-if="!kotaGuvenilir(sv)" style="font-size:11.5px;color:#b7791f;margin-bottom:8px">Bu servis için kalan kullanım hesaplanmış veya varsayılmış olabilir; sağlayıcı kotası olarak doğrulanmadı.</div>
+
+              <div v-if="sv.yenilenme &amp;&amp; kotaGuvenilir(sv)"
                    style="font-size:11.5px;color:#2f6fbf;background:#eef5ff;display:inline-block;
                           padding:2px 8px;border-radius:10px;margin-bottom:8px">
                 ⟳ {{ sv.yenilenme }}
@@ -312,7 +320,7 @@
                 </div>
               </div>
 
-              <div v-if="sv.not_" style="font-size:11.5px;color:#909399;margin-top:6px">{{ sv.not_ }}</div>
+              <div v-if="sv.not_ &amp;&amp; kotaGuvenilir(sv)" style="font-size:11.5px;color:#909399;margin-top:6px">{{ sv.not_ }}</div>
             </div>
           </div>
         </div>

@@ -5,6 +5,7 @@
   'use strict';
   const { store, trTime, trClock, ago, dur, bytes, nextCronRun, nextCronRuns, cronHuman, runDuration } = window.BD;
   const VIEWS = window.VIEWS;
+  const openLink = (url) => { if (url) window.open(url, '_blank', 'noopener'); };
   const ui = window.BD.ui;
 
   /* ============================ YOUTUBE ANALİTİK ======================= */
@@ -29,7 +30,7 @@
       rows() {
         let list = this.metrics.slice();
         if (this.typeFilter !== 'all') {
-          list = list.filter((m) => (this.typeFilter === 'short' ? (m.duration_sec || 0) <= 65 : (m.duration_sec || 0) > 65));
+          list = list.filter((m) => (this.typeFilter === 'short' ? m.duration_sec != null && m.duration_sec > 0 && m.duration_sec <= 65 : m.duration_sec != null && m.duration_sec > 65));
         }
         if (this.curveOnly) list = list.filter((m) => this.curveIds.has(m.video_id));
         if (this.search) {
@@ -53,11 +54,11 @@
           best: m.slice().sort((a, b) => (b.views || 0) - (a.views || 0))[0] || null
         };
       },
-      shortsCount() { return this.metrics.filter((m) => (m.duration_sec || 0) <= 65).length; },
-      longCount() { return this.metrics.filter((m) => (m.duration_sec || 0) > 65).length; }
+      shortsCount() { return this.metrics.filter((m) => m.duration_sec != null && m.duration_sec > 0 && m.duration_sec <= 65).length; },
+      longCount() { return this.metrics.filter((m) => m.duration_sec != null && m.duration_sec > 65).length; }
     },
     methods: {
-      trTime, ui,
+      trTime, ui, openLink,
       pct(v) { return v === null || v === undefined ? '—' : '%' + Number(v).toFixed(1); },
       num(v) { return v === null || v === undefined ? '—' : Number(v).toLocaleString('tr-TR'); },
       openCurve(row) {
@@ -277,6 +278,7 @@
       }
     },
     methods: {
+      openLink,
       selAll() { this.selectedIds = this.curves.map((c) => c.video_id); },
       selNone() { this.selectedIds = []; },
       focusOn(id) { this.focus = id; this.$nextTick(() => { this.render(); window.scrollTo({ top: 0, behavior: 'smooth' }); }); },
@@ -473,7 +475,7 @@
       }
     },
     methods: {
-      trTime, trClock, cronHuman, dur, runDuration, ui,
+      trTime, trClock, cronHuman, dur, runDuration, ui, openLink,
       fmt(ms) {
         if (ms === null || ms === undefined) return '—';
         const m = Math.floor(ms / 60000);
@@ -603,7 +605,7 @@
       }
     },
     methods: {
-      trTime, ago, bytes, ui,
+      trTime, ago, bytes, ui, openLink,
       async load() {
         await Promise.all([this.s.loadTelemetry(), this.s.loadFiles(), this.s.loadWorkflows(), this.s.loadRuns()]);
         this.s.notify('success', 'Tüm canlı veriler yenilendi.');
@@ -640,7 +642,7 @@
               <div class="kv"><span class="k">Oturum</span><span class="v">{{ s.user ? '@' + s.user.login : '—' }}</span></div>
               <div class="kv"><span class="k">Depo</span><span class="v mono-sm">{{ s.repo }}</span></div>
               <div class="kv"><span class="k">Dal</span><span class="v mono-sm">{{ s.branch }}</span></div>
-              <div class="kv"><span class="k">Token durumu</span><span class="v"><el-tag size="small" type="success" effect="plain">geçerli · repo+workflow</el-tag></span></div>
+              <div class="kv"><span class="k">Token durumu</span><span class="v"><el-tag size="small" type="success" effect="plain">oturum açık · yazma yetkisi doğrulanmadı</el-tag></span></div>
               <div class="kv"><span class="k">API kotası</span>
                 <span class="v" style="min-width:180px">
                   <el-progress :percentage="ratePercent" :stroke-width="10"

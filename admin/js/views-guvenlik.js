@@ -76,7 +76,9 @@
         this.sonuc = '';
         this.sonHata = '';
         try {
-          // 1) mevcut token gerçekten çalışıyor mu?
+          // Önceki şifre gerçekten kasayı açmalı; sadece aktif oturum yeterli değil.
+          const eskiToken = await window.BD.decryptVault(this.eski);
+          if (!eskiToken || eskiToken !== this.s.token) throw new Error('Mevcut şifre doğrulanamadı.');
           await this.s.gh('/user');
 
           // 2) yeni kasayı üret
@@ -164,7 +166,7 @@
               <el-divider />
               <div style="font-size:13px;color:#606266;line-height:1.7">
                 <b>Nasıl çalışıyor?</b><br />
-                Anahtar (PAT) tarayıcıda tutulmaz; şifreyle açılan bir kasada durur.
+                Kasa şifrelidir; girişten sonra PAT oturum için tarayıcı depolamasında düz metin tutulur.
                 Şifre değişince kasa yeni şifreyle tekrar kurulur ve
                 <code>admin/js/api.js</code> dosyasına yazılır.<br /><br />
                 <b>Unutursan:</b> GitHub → Settings → Developer settings → Tokens bölümünden yeni anahtar

@@ -31,15 +31,15 @@
         const q = this.all;
         return {
           total: q.length,
-          ready: q.filter((x) => x.is_ready).length,
+          ready: q.filter((x) => x.is_ready && x.has_drive_video).length,
           published: q.filter((x) => x.is_published).length,
-          noCover: q.filter((x) => x.is_ready && !x.has_drive_cover).length,
+          noCover: q.filter((x) => !x.is_published && x.has_drive_video && !x.has_drive_cover).length,
           shorts: q.length
         };
       },
       filtered() {
         return this.all.filter((x) => {
-          if (this.readyOnly && !x.is_ready) return false;
+          if (this.readyOnly && !(x.is_ready && x.has_drive_video)) return false;
           if (this.search) {
             const q = this.search.toLowerCase();
             return (x.file_name + ' ' + (x.title || '')).toLowerCase().includes(q);
@@ -100,7 +100,7 @@
         <div class="page-head">
           <div>
             <h2>Video Kuyruğu</h2>
-            <p>Drive tablosundan canlı okunan yayın kuyruğu · {{ all.length }} satır · telemetri {{ s.telemetry ? s.telemetry.generated_at : '—' }}</p>
+            <p>Son telemetrideki yayın kuyruğu · {{ all.length }} satır · telemetri {{ s.telemetry ? s.telemetry.generated_at : '—' }}</p>
           </div>
           <div class="head-actions">
             <el-input v-model="search" size="small" placeholder="Dosya veya başlık ara" clearable prefix-icon="Search" style="width:210px" />
@@ -121,7 +121,7 @@
             <div class="d">her gün 19:30 TR yayına hazır</div></div>
           <div class="stat green"><div class="bar"></div><div class="k">Yayınlandı</div><div class="v">{{ stats.published }}</div>
             <div class="d">aktif seride toplam {{ stats.total }} kayıt</div></div>
-          <div class="stat orange"><div class="bar"></div><div class="k">Kapaksız Hazır Video</div><div class="v">{{ stats.noCover }}</div>
+          <div class="stat orange"><div class="bar"></div><div class="k">Kapaksız Bekleyen Video</div><div class="v">{{ stats.noCover }}</div>
             <div class="d">{{ stats.noCover ? 'Kapak Yükle ekranından tamamla' : 'tüm hazır kapaklar tam' }}</div></div>
           <div class="stat grey"><div class="bar"></div><div class="k">Sıradaki Yayın</div>
             <div class="v" style="font-size:17px">{{ (s.telemetry && s.telemetry.queue_summary && s.telemetry.queue_summary.next_short) || '—' }}</div>
@@ -248,7 +248,17 @@
           }
           out.push({ idx: i, cells, no: i });
         }
-        return out;
+        // DRIVE sayfası Shorts ve uzun videoları ayrı bloklarda tutuyor.
+        // Eklenme tarihi yok: Shorts numarasını azalan göster, ardından diğer
+        // satırları ters sırada göster. Kaynak satır idx değişmez.
+        if (this.wb.active !== 'DRIVE') return out.reverse();
+        const nameCol = this.headers.findIndex((h) => String(h).trim().toLocaleLowerCase('tr-TR') === 'dosya adı');
+        const rank = (row) => {
+          if (row.cells.every((v) => v === '' || v == null)) return [2, row.idx];
+          const m = nameCol < 0 ? null : String(row.cells[nameCol] || '').match(/^video_(\d+)\.mp4$/i);
+          return m ? [1, Number(m[1])] : [0, row.idx];
+        };
+        return out.sort((a, b) => { const x = rank(a), y = rank(b); return y[0] - x[0] || y[1] - x[1] || b.idx - a.idx; });
       },
       paged() {
         const start = (this.page - 1) * this.pageSize;
@@ -257,7 +267,8 @@
       totalRows() { return this.bodyRows.length; }
     },
     watch: {
-      'wb.active'() { this.page = 1; }
+      'wb.active'() { this.page = 1; },
+      search() { this.page = 1; }
     },
     methods: {
       bytes,
@@ -269,8 +280,9 @@
         const arr = this.wb.sheets[key];
         arr.push(new Array(this.headers.length).fill(''));
         this.wb.dirty = true;
-        this.page = Math.ceil((this.totalRows + 1) / this.pageSize);
-        this.s.notify('info', 'Boş satır eklendi (kaydetmeyi unutmayın).');
+        this.search = '';
+        this.page = 1;
+        this.s.notify('info', 'Boş satır en üstte gösteriliyor (kaydetmeyi unutmayın).');
       },
       async save(push) {
         this.saving = true;
@@ -327,8 +339,8 @@
         <template v-else>
           <div class="alert-strip" :class="wb.dirty ? 'warn' : 'info'">
             <el-icon><component :is="wb.dirty ? 'WarningFilled' : 'InfoFilled'" /></el-icon>
-            <span v-if="wb.dirty">Kaydedilmemiş değişiklikler var. "Kaydet + Drive'a yaz" GitHub'a commit atar ve Google Drive <b>YOUTUBE_OTOMASYON / CEO</b> klasöründeki ana tabloyu günceller. Not: ilk kayıtta orijinal dosya <b>admin_backups/</b> altına yedeklenir; tarayıcı tabanlı yazma hücre stillerini sadeleştirebilir.</span>
-            <span v-else>Tablo canlı depodan yüklendi ({{ (wb.meta.size/1024).toFixed(0) }} KB). Düzenleme modunu açarak hücreleri değiştirebilirsin. <b>Not:</b> 30 dakikalık senkron tabloyu Drive'daki ana kopyadan yeniler; kalıcı düzenleme için <b>Kaydet + Drive'a yaz</b> kullan.</span>
+            <span v-if="wb.dirty">Kaydedilmemiş değişiklikler var. "Kaydet + Drive'a yaz" GitHub'a commit atar ve Google Drive <b>YOUTUBE_OTOMASYON / CEO</b> klasöründeki ana tabloyu günceller. <b>Uyarı:</b> kayıt dosyayı yeniden oluşturur; hücre türleri, biçimler, birleştirmeler ve formüller kaybolabilir. Yedek alınamasa da kayıt devam edebilir. Güvenli yedek ve doğrulama olmadan kaydetmeyin.</span>
+            <span v-else>Tablo canlı depodan yüklendi ({{ (wb.meta.size/1024).toFixed(0) }} KB). Düzenleme modunu açarak hücreleri değiştirebilirsin. <b>Not:</b> senkron tabloyu Drive'daki ana kopyadan yeniler; kalıcı düzenleme için <b>Kaydet + Drive'a yaz</b> kullan.</span>
           </div>
 
           <div class="card">
@@ -364,7 +376,7 @@
               </el-table>
             </div>
             <div class="card-body flex" style="justify-content:space-between">
-              <span class="muted">Sayfa başına {{ pageSize }} satır · düzenlemeler yalnızca kaydedince kalıcı olur</span>
+              <span class="muted">Shorts yüksek numara önce (eklenme tarihi yok) · # orijinal satır sırası · sayfa başına {{ pageSize }} · değişiklikler kaydedince kalıcı olur</span>
               <el-pagination layout="prev, pager, next" :page-size="pageSize" :total="totalRows" v-model:current-page="page" background small />
             </div>
           </div>

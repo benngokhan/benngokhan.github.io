@@ -1014,7 +1014,7 @@ function frame(now){
 
 /* ── arayüz ── */
 function setMode(){
-  const canli = D.mod === "canli";
+  const canli = isLive();
   document.getElementById("mode").classList.toggle("canli", canli);
   document.getElementById("modeText").textContent = canli ? "CANLI" : (D.mod_etiketi || "REPLAY");
   document.getElementById("tkSrc").textContent = canli ? "CANLI AKIŞ" : "REPLAY · KAYITLI GERÇEK OLAYLAR";
@@ -1037,18 +1037,59 @@ function clockUI(){
   document.getElementById("date").textContent = `${pad(d.getDate())} ${AYLAR[d.getMonth()]} ${d.getFullYear()}`;
 }
 
-/* ── replay ── */
-let replayIdx = -1;
+/* ── canli / replay ── */
+let replayIdx = -1, replayTimer = null;
+let liveTimer = null, liveQueue = [], liveInit = false;
+const seenEvents = new Set();
+const evKey = e => `${e.t}|${e.isci}|${e.metin}`;
+
+function freshEnough(){
+  if (!D.guncelleme) return false;
+  const t = Date.parse(D.guncelleme);
+  return isFinite(t) && (Date.now() - t) < 12 * 3600 * 1000;
+}
+function isLive(){ return D.mod === "canli" && freshEnough(); }
+
+function drainLive(){
+  if (liveTimer || !liveQueue.length) return;
+  const tick = () => {
+    const ev = liveQueue.shift();
+    if (ev) runEvent(ev);
+    liveTimer = liveQueue.length ? setTimeout(tick, 5200) : null;
+  };
+  tick();
+}
+function liveSync(events){
+  if (!liveInit){
+    liveInit = true;
+    events.forEach(e => seenEvents.add(evKey(e)));
+    liveQueue.push(...events.slice(-3));
+    drainLive();
+    return;
+  }
+  const fresh = events.filter(e => !seenEvents.has(evKey(e)));
+  if (!fresh.length) return;
+  fresh.forEach(e => seenEvents.add(evKey(e)));
+  liveQueue.push(...fresh.slice(-5));
+  drainLive();
+}
+
 function startReplay(){
   const akis = D.akis || [];
-  if (D.mod === "canli" || !akis.length) return;
+  if (isLive() || !akis.length){
+    if (replayTimer){ clearInterval(replayTimer); replayTimer = null; }
+    return;
+  }
+  if (replayTimer) return;
   replayIdx = -1;
   const adim = () => {
-    replayIdx = (replayIdx + 1) % akis.length;
-    runEvent(akis[replayIdx]);
+    const list = D.akis || [];
+    if (!list.length) return;
+    replayIdx = (replayIdx + 1) % list.length;
+    runEvent(list[replayIdx]);
   };
   adim();
-  setInterval(adim, 5200);
+  replayTimer = setInterval(adim, 5200);
 }
 
 /* ── ölçek ── */
@@ -1117,12 +1158,15 @@ function renderStats(){
   fit();
 }
 
+let booted = false, clockTimer = null;
+
 function boot(data){
   D = data || FALLBACK;
-  buildMascots();
-  setMode(); clockUI(); renderStats();
-  setInterval(clockUI, 1000);
+  if (!booted){ buildMascots(); booted = true; }
+  setMode(); renderStats();
+  if (!clockTimer){ clockUI(); clockTimer = setInterval(clockUI, 1000); }
   startReplay();
+  if (isLive()) liveSync(D.akis || []);
   if (!last) requestAnimationFrame(frame);
 }
 function init(){
@@ -1131,10 +1175,12 @@ function init(){
   addEventListener("orientationchange", () => setTimeout(fit, 120));
   if (window.visualViewport) window.visualViewport.addEventListener("resize", fit);
   setInterval(fit, 400);
-  fetch("./data/canli.json", { cache:"no-store" })
+  const load = () => fetch("./data/canli.json", { cache:"no-store" })
     .then(r => { if (!r.ok) throw 0; return r.json(); })
     .then(j => boot(j))
-    .catch(() => boot(FALLBACK));
+    .catch(() => { if (!booted) boot(FALLBACK); });
+  load();
+  setInterval(load, 60000);
 }
 document.getElementById("fs").addEventListener("click", () => {
   if (!document.fullscreenElement) document.documentElement.requestFullscreen?.();

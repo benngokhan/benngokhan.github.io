@@ -11,7 +11,11 @@
   html,body{height:100%;overflow:hidden;background:#040a10}
   body{font-family:-apple-system,"Segoe UI",Roboto,Arial,sans-serif;color:#dbe7f3;-webkit-font-smoothing:antialiased;user-select:none}
   #app{position:absolute;inset:0;display:flex;flex-direction:column;overflow:hidden}
-  #sceneWrap{position:relative;flex:1 1 auto;min-height:0;overflow:hidden}
+  #sceneWrap{position:relative;flex:1 1 auto;min-height:0;overflow:hidden;
+      background:radial-gradient(115% 85% at 50% 40%,rgba(28,88,116,.26),transparent 64%),
+                 radial-gradient(80% 60% at 50% 105%,rgba(10,42,62,.45),transparent 72%),#030a10}
+  #sceneWrap::after{content:"";position:absolute;inset:0;pointer-events:none;
+      box-shadow:inset 0 0 150px rgba(0,0,0,.6),inset 0 1px 0 rgba(157,235,231,.07)}
   #scene{position:absolute;left:50%;top:50%;width:1280px;height:800px;display:block;transform-origin:center center;transform:translate(-50%,-50%)}
 
   #top{position:relative;flex:none;height:56px;display:flex;align-items:center;gap:20px;justify-content:space-between;
@@ -41,19 +45,35 @@
   #fs:hover{color:#9debe7;border-color:rgba(157,235,231,.55)}
 
   #stats{flex:none;display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:1px;
-      background:rgba(120,200,255,.1);border-top:1px solid rgba(120,200,255,.14)}
-  .stat{display:flex;flex-direction:column;gap:2px;padding:7px 12px;background:rgba(5,14,21,.94)}
-  .stat b{font-size:15px;font-weight:700;color:#9debe7;font-family:ui-monospace,"Roboto Mono",Menlo,monospace;line-height:1.1}
-  .stat span{font-size:8.5px;letter-spacing:.14em;color:#5d7d94;text-transform:uppercase}
-  #stWorkers{display:none;grid-column:1/-1;gap:6px 10px;padding:9px 12px;background:rgba(5,14,21,.94);
+      background:linear-gradient(90deg,rgba(120,200,255,.14),rgba(120,200,255,.05));
+      border-top:1px solid rgba(120,200,255,.15);box-shadow:0 -14px 40px rgba(0,0,0,.35)}
+  .stat{display:flex;flex-direction:column;gap:1px;padding:8px 13px 7px;background:rgba(4,12,19,.96);
+      position:relative;overflow:hidden}
+  .stat::before{content:"";position:absolute;left:0;top:0;bottom:0;width:2px;
+      background:linear-gradient(180deg,rgba(157,235,231,.5),transparent)}
+  .stat .k{font-size:8px;letter-spacing:.18em;color:#557a92;text-transform:uppercase;font-weight:600}
+  .stat b{font-size:16px;font-weight:700;color:#c8fbf6;line-height:1.15;
+      font-family:ui-monospace,"Roboto Mono",Menlo,monospace;font-variant-numeric:tabular-nums;
+      text-shadow:0 0 16px rgba(34,211,238,.35)}
+  .stat em{font-style:normal;font-size:8.5px;letter-spacing:.04em;color:#6b8aa0}
+  #stLive{grid-column:1/-1;display:flex;align-items:center;gap:8px;padding:6px 13px;
+      background:rgba(3,10,16,.97);border-top:1px solid rgba(120,200,255,.07);font-size:9.5px;
+      letter-spacing:.05em;color:#8fb0c8;min-width:0}
+  #stLive b{font-size:8px;letter-spacing:.18em;color:#9debe7;flex:none}
+  #stNext{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;color:#a9c6d6}
+  #stUpdated{margin-left:auto;flex:none;font-size:8px;letter-spacing:.12em;color:#43616f}
+  .liveDot{width:5px;height:5px;border-radius:50%;background:#8ef0c0;box-shadow:0 0 8px #8ef0c0;
+      flex:none;animation:blink 1.8s infinite}
+  #stWorkers{display:none;grid-column:1/-1;gap:6px 10px;padding:9px 13px;
+      background:rgba(4,12,19,.96);border-top:1px solid rgba(120,200,255,.07);
       grid-template-columns:repeat(3,minmax(0,1fr))}
   .wchip{display:flex;align-items:center;gap:5px;font-size:9px;letter-spacing:.05em;color:#9fb6c9;
       white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .wchip i{width:5px;height:5px;border-radius:50%;flex:none}
   @media (max-aspect-ratio:1/1){
     #stats{grid-template-columns:repeat(2,minmax(0,1fr))}
-    .stat{padding:9px 12px}
-    .stat b{font-size:18px}
+    .stat{padding:10px 13px 9px}
+    .stat b{font-size:19px}
     #stWorkers{display:grid}
     #top{height:52px}
     #ticker{height:40px}
@@ -102,12 +122,17 @@
   </main>
 
   <section id="stats" aria-label="Gerçek kanal verileri">
-    <div class="stat"><b id="stIzlenme">—</b><span>izlenme</span></div>
-    <div class="stat"><b id="stAbone">—</b><span>abone</span></div>
-    <div class="stat"><b id="stVideo">—</b><span>video</span></div>
-    <div class="stat"><b id="stBegeni">—</b><span>beğeni</span></div>
-    <div class="stat"><b id="stShorts">—</b><span>shorts stok</span></div>
-    <div class="stat"><b id="stGun">—</b><span>gün kalan</span></div>
+    <div class="stat"><span class="k">İzlenme</span><b id="stIzlenme">—</b><em id="stHaftalik">—</em></div>
+    <div class="stat"><span class="k">Abone</span><b id="stAbone">—</b><em id="stYorum">—</em></div>
+    <div class="stat"><span class="k">Video</span><b id="stVideo">—</b><em id="stBegeni">—</em></div>
+    <div class="stat"><span class="k">Shorts Stok</span><b id="stShorts">—</b><em id="stGun">—</em></div>
+    <div class="stat"><span class="k">Sıradaki Yayın</span><b id="stSlot">—</b><em id="stSlotAlt">—</em></div>
+    <div class="stat"><span class="k">Sistem</span><b id="stSistem">—</b><em id="stSistemAlt">—</em></div>
+    <div id="stLive">
+      <span class="liveDot"></span><b>SIRADAKİ</b>
+      <span id="stNext">—</span>
+      <span id="stUpdated">—</span>
+    </div>
     <div id="stWorkers"></div>
   </section>
 
@@ -1027,15 +1052,44 @@ function fit(){
 }
 
 /* ── başlat ── */
+function countTo(el, target, fmt){
+  if (!el) return;
+  const t0 = (window.performance && performance.now()) || Date.now();
+  const dur = 900;
+  const step = () => {
+    const now = (window.performance && performance.now()) || Date.now();
+    const p = Math.min(1, (now - t0) / dur);
+    const e = 1 - Math.pow(1 - p, 3);
+    el.textContent = fmt(Math.round(target * e));
+    if (p < 1) requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
+}
+
+function fmtGuncelleme(iso){
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return "";
+  return `GÜNCELLEME ${pad(d.getDate())} ${AYLAR[d.getMonth()]} ${d.getFullYear()} · ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
 function renderStats(){
-  const k = D.kanal || {}, q = D.kuyruk || {};
+  const k = D.kanal || {}, q = D.kuyruk || {}, o = D.ozet || {}, s = D.sistem || {};
   const set = (id, v) => { const e = document.getElementById(id); if (e) e.textContent = v; };
-  set("stIzlenme", nf.format(k.izlenme || 0));
-  set("stAbone", nf.format(k.abone || 0));
-  set("stVideo", nf.format(k.video || 0));
-  set("stBegeni", nf.format(k.begeni || 0));
-  set("stShorts", nf.format(q.shorts || 0));
-  set("stGun", (q.gun || 0) + " gün");
+  countTo(document.getElementById("stIzlenme"), k.izlenme || 0, v => nf.format(v));
+  countTo(document.getElementById("stAbone"), k.abone || 0, v => nf.format(v));
+  countTo(document.getElementById("stVideo"), k.video || 0, v => nf.format(v));
+  countTo(document.getElementById("stShorts"), q.shorts || 0, v => nf.format(v));
+  set("stHaftalik", `+${k.haftalik || 0} bu hafta`);
+  set("stYorum", `${nf.format(k.yorum || 0)} yorum`);
+  set("stBegeni", `${nf.format(k.begeni || 0)} beğeni`);
+  set("stGun", `${q.gun || 0} gün yeter`);
+  set("stSlot", s.slot_saati || "19:30");
+  set("stSlotAlt", s.gunluk || "günde 1 Short");
+  set("stSistem", `${o.ayakta || 0}/${o.toplam || 0}`);
+  set("stSistemAlt", `ayakta · pasif ${o.pasif || 0}`);
+  set("stNext", q.sonraki ? `${q.sonraki} — ${q.baslik || ""}` : "—");
+  set("stUpdated", fmtGuncelleme(D.guncelleme));
   const box = document.getElementById("stWorkers");
   if (box) box.innerHTML = (D.isci || []).map(x => {
     const meta = WORKERS.find(w => w.id === x.id);

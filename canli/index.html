@@ -64,6 +64,14 @@
   #stUpdated{margin-left:auto;flex:none;font-size:8px;letter-spacing:.12em;color:#43616f}
   .liveDot{width:5px;height:5px;border-radius:50%;background:#8ef0c0;box-shadow:0 0 8px #8ef0c0;
       flex:none;animation:blink 1.8s infinite}
+  #stQuota{display:none;grid-column:1/-1;gap:6px 12px;padding:8px 13px 10px;
+      background:rgba(4,12,19,.96);border-top:1px solid rgba(120,200,255,.07);
+      grid-template-columns:repeat(2,minmax(0,1fr))}
+  .q{display:flex;flex-direction:column;gap:3px;min-width:0}
+  .q .qt{display:flex;justify-content:space-between;font-size:8px;letter-spacing:.1em;color:#6f8aa3}
+  .q .qt b{color:#9debe7;font-weight:700;font-variant-numeric:tabular-nums}
+  .q .bar{height:3px;border-radius:2px;background:rgba(120,200,255,.14);overflow:hidden}
+  .q .bar i{display:block;height:100%;border-radius:2px;background:linear-gradient(90deg,#38bdf8,#8ef0c0)}
   #stWorkers{display:none;grid-column:1/-1;gap:6px 10px;padding:9px 13px;
       background:rgba(4,12,19,.96);border-top:1px solid rgba(120,200,255,.07);
       grid-template-columns:repeat(3,minmax(0,1fr))}
@@ -75,6 +83,7 @@
     .stat{padding:10px 13px 9px}
     .stat b{font-size:19px}
     #stWorkers{display:grid}
+    #stQuota{display:grid}
     #top{height:52px}
     #ticker{height:40px}
   }
@@ -133,6 +142,7 @@
       <span id="stNext">—</span>
       <span id="stUpdated">—</span>
     </div>
+    <div id="stQuota"></div>
     <div id="stWorkers"></div>
   </section>
 
@@ -1090,6 +1100,13 @@ function renderStats(){
   set("stSistemAlt", `ayakta · pasif ${o.pasif || 0}`);
   set("stNext", q.sonraki ? `${q.sonraki} — ${q.baslik || ""}` : "—");
   set("stUpdated", fmtGuncelleme(D.guncelleme));
+  const qBox = document.getElementById("stQuota");
+  if (qBox) qBox.innerHTML = (D.kotalar || []).map(q => {
+    const lim = q.limit || 1;
+    const pct = Math.max(0, Math.min(100, Math.round((q.kalan || 0) / lim * 100)));
+    return `<div class="q"><div class="qt"><span>${q.ad}</span><b>%${pct}</b></div>` +
+           `<div class="bar"><i style="width:${pct}%"></i></div></div>`;
+  }).join("");
   const box = document.getElementById("stWorkers");
   if (box) box.innerHTML = (D.isci || []).map(x => {
     const meta = WORKERS.find(w => w.id === x.id);

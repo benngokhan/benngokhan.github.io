@@ -6,10 +6,12 @@
  *   - Diğer aynı-köken GET: stale-while-revalidate
  *   - /admin ve /miracoo: hiç karışmaz (ağ ne derse o)
  */
-const VERSION = 'bilgidozu-v3';
+const VERSION = 'bilgidozu-v4';
 const CORE = [
   './',
   './index.html',
+  './canli/',
+  './canli/data/canli.json',
   './manifest.webmanifest',
   './assets/icons/icon-192.png',
   './assets/icons/icon-512.png',
@@ -50,11 +52,11 @@ self.addEventListener('fetch', (event) => {
       try {
         const fresh = await fetch(req);
         const cache = await caches.open(VERSION);
-        cache.put('./index.html', fresh.clone());
+        if (fresh && fresh.ok) cache.put(req, fresh.clone());
         return fresh;
       } catch (err) {
         const cache = await caches.open(VERSION);
-        return (await cache.match('./index.html')) || (await cache.match('./')) || Response.error();
+        return (await cache.match(req)) || (await cache.match('./index.html')) || (await cache.match('./')) || Response.error();
       }
     })());
     return;

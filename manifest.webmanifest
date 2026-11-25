@@ -46,6 +46,12 @@
       "short_name": "Uzun",
       "url": "./#derinlemesine",
       "icons": [{ "src": "./assets/icons/icon-192.png", "sizes": "192x192", "type": "image/png" }]
+    },
+    {
+      "name": "Canlı Akış",
+      "short_name": "Canlı",
+      "url": "./canli/",
+      "icons": [{ "src": "./assets/icons/icon-192.png", "sizes": "192x192", "type": "image/png" }]
     }
   ]
 }

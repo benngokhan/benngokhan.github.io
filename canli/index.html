@@ -10,10 +10,11 @@
   *{box-sizing:border-box;margin:0;padding:0}
   html,body{height:100%;overflow:hidden;background:#040a10}
   body{font-family:-apple-system,"Segoe UI",Roboto,Arial,sans-serif;color:#dbe7f3;-webkit-font-smoothing:antialiased;user-select:none}
-  #stage{position:absolute;inset:0;overflow:hidden}
+  #app{position:absolute;inset:0;display:flex;flex-direction:column;overflow:hidden}
+  #sceneWrap{position:relative;flex:1 1 auto;min-height:0;overflow:hidden}
   #scene{position:absolute;left:50%;top:50%;width:1280px;height:800px;display:block;transform-origin:center center;transform:translate(-50%,-50%)}
 
-  #top{position:absolute;left:0;right:0;top:0;height:56px;display:flex;align-items:center;gap:20px;justify-content:space-between;
+  #top{position:relative;flex:none;height:56px;display:flex;align-items:center;gap:20px;justify-content:space-between;
        padding:0 18px;background:linear-gradient(180deg,rgba(4,10,16,.96) 0%,rgba(4,10,16,.5) 66%,transparent 100%);z-index:3}
   .brand{display:flex;align-items:center;gap:9px;font-size:13px;font-weight:700;letter-spacing:.18em;color:#eaf6ff;
          text-decoration:none;white-space:nowrap;flex:none}
@@ -39,8 +40,28 @@
   #fs{height:27px;width:27px;border-radius:7px;border:1px solid rgba(150,220,230,.24);background:rgba(120,200,255,.06);color:#9fb6c9;font-size:13px;cursor:pointer;line-height:1;display:inline-flex;align-items:center;justify-content:center}
   #fs:hover{color:#9debe7;border-color:rgba(157,235,231,.55)}
 
+  #stats{flex:none;display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:1px;
+      background:rgba(120,200,255,.1);border-top:1px solid rgba(120,200,255,.14)}
+  .stat{display:flex;flex-direction:column;gap:2px;padding:7px 12px;background:rgba(5,14,21,.94)}
+  .stat b{font-size:15px;font-weight:700;color:#9debe7;font-family:ui-monospace,"Roboto Mono",Menlo,monospace;line-height:1.1}
+  .stat span{font-size:8.5px;letter-spacing:.14em;color:#5d7d94;text-transform:uppercase}
+  #stWorkers{display:none;grid-column:1/-1;gap:6px 10px;padding:9px 12px;background:rgba(5,14,21,.94);
+      grid-template-columns:repeat(3,minmax(0,1fr))}
+  .wchip{display:flex;align-items:center;gap:5px;font-size:9px;letter-spacing:.05em;color:#9fb6c9;
+      white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .wchip i{width:5px;height:5px;border-radius:50%;flex:none}
+  @media (max-aspect-ratio:1/1){
+    #stats{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .stat{padding:9px 12px}
+    .stat b{font-size:18px}
+    #stWorkers{display:grid}
+    #top{height:52px}
+    #ticker{height:40px}
+  }
+  @media (max-height:480px) and (min-aspect-ratio:1/1){#stats{display:none}}
+
   .mono{font-family:ui-monospace,"Roboto Mono",Menlo,Consolas,monospace}
-  #ticker{position:absolute;left:0;right:0;bottom:0;height:48px;display:flex;align-items:center;gap:10px;padding:0 20px;
+  #ticker{position:relative;flex:none;height:44px;display:flex;align-items:center;gap:10px;padding:0 20px;
           background:linear-gradient(0deg,rgba(4,10,16,.97) 0%,rgba(4,10,16,.62) 55%,transparent 100%);z-index:3;font-size:11px}
   #ticker .dot{width:6px;height:6px;border-radius:50%;background:#9debe7;box-shadow:0 0 10px #9debe7;flex:none}
   #tkTime{color:#5d7d94;font-size:10px}
@@ -55,9 +76,7 @@
 </style>
 </head>
 <body>
-<div id="stage">
-  <canvas id="scene"></canvas>
-
+<div id="app">
   <header id="top">
     <a class="brand" href="https://benngokhan.github.io/">
       <span class="logo">◆</span> BİLGİDOZU
@@ -78,6 +97,19 @@
     </div>
   </header>
 
+  <main id="sceneWrap">
+    <canvas id="scene"></canvas>
+  </main>
+
+  <section id="stats" aria-label="Gerçek kanal verileri">
+    <div class="stat"><b id="stIzlenme">—</b><span>izlenme</span></div>
+    <div class="stat"><b id="stAbone">—</b><span>abone</span></div>
+    <div class="stat"><b id="stVideo">—</b><span>video</span></div>
+    <div class="stat"><b id="stBegeni">—</b><span>beğeni</span></div>
+    <div class="stat"><b id="stShorts">—</b><span>shorts stok</span></div>
+    <div class="stat"><b id="stGun">—</b><span>gün kalan</span></div>
+    <div id="stWorkers"></div>
+  </section>
 
   <footer id="ticker">
     <span class="dot"></span>
@@ -987,18 +1019,37 @@ function startReplay(){
 /* ── ölçek ── */
 const sceneEl = document.getElementById("scene");
 function fit(){
-  const vv = window.visualViewport;
-  const w = (vv && vv.width) || innerWidth;
-  const h = (vv && vv.height) || innerHeight;
+  const wrap = document.getElementById("sceneWrap");
+  const w = (wrap && wrap.clientWidth) || innerWidth;
+  const h = (wrap && wrap.clientHeight) || innerHeight;
   const s = Math.min(w / W, h / H);
   sceneEl.style.transform = `translate(-50%,-50%) scale(${s})`;
 }
 
 /* ── başlat ── */
+function renderStats(){
+  const k = D.kanal || {}, q = D.kuyruk || {};
+  const set = (id, v) => { const e = document.getElementById(id); if (e) e.textContent = v; };
+  set("stIzlenme", nf.format(k.izlenme || 0));
+  set("stAbone", nf.format(k.abone || 0));
+  set("stVideo", nf.format(k.video || 0));
+  set("stBegeni", nf.format(k.begeni || 0));
+  set("stShorts", nf.format(q.shorts || 0));
+  set("stGun", (q.gun || 0) + " gün");
+  const box = document.getElementById("stWorkers");
+  if (box) box.innerHTML = (D.isci || []).map(x => {
+    const meta = WORKERS.find(w => w.id === x.id);
+    const label = meta ? meta.label : x.id;
+    const col = DURUM_RENK[x.durum] || "#64748b";
+    return `<span class="wchip"><i style="background:${col};box-shadow:0 0 6px ${col}"></i>${label}</span>`;
+  }).join("");
+  fit();
+}
+
 function boot(data){
   D = data || FALLBACK;
   buildMascots();
-  setMode(); clockUI();
+  setMode(); clockUI(); renderStats();
   setInterval(clockUI, 1000);
   startReplay();
   if (!last) requestAnimationFrame(frame);
